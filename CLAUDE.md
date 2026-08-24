@@ -27,6 +27,7 @@ La raíz de git es `D:\Curso_Claude` (el curso completo), no este directorio. Es
 Arcade Vault es un portal de arcade retro (jugar online y competir por puntaje). Se está construyendo con Next.js 16 App Router + React 19 + Tailwind CSS v4, y `app/` **sigue siendo el scaffold intacto de create-next-app** (`app/layout.tsx`, `app/page.tsx`, `app/globals.css`). Todavía no existe nada del producto en `app/`.
 
 ### `templates/` es la referencia de diseño, no código que se compila
+Usa siempre /frontend-design para diseñar interfaces de usuario.
 
 `templates/` contiene un prototipo completo y funcional de la app pensada, como página HTML standalone: `Arcade Vault.html` carga React 18 UMD + Babel desde unpkg y trae cada `.jsx` con `<script type="text/babel">`. No hay bundler, ni imports, ni módulos: cada archivo define globals y los publica con `window.Nav = Nav`, y aliasea los hooks para evitar redeclaraciones (`useState: useStateB`, `useStateP`, …).
 
