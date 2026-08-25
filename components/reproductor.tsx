@@ -13,14 +13,20 @@ import type { Game } from "@/lib/data";
 import { useSession } from "@/lib/session";
 
 export function Reproductor({ game }: { game: Game }) {
-  const { user } = useSession();
+  const { user, saveScore } = useSession();
   const [score, setScore] = useState(0);
   const [level, setLevel] = useState(1);
   const [paused, setPaused] = useState(false);
   const [over, setOver] = useState(false);
+  const [saved, setSaved] = useState(false);
+  // Iniciales del modal. Arranca en null en lugar del nombre del usuario porque
+  // la sesión se hidrata después del primer render: mientras nadie escriba, el
+  // input sigue a displayName; en cuanto se escribe, manda lo tipeado.
+  const [initials, setInitials] = useState<string | null>(null);
   // El HUD sigue a la sesión: el provider arranca sin usuario y lo hidrata
   // después del primer render, así que leerlo derivado evita quedar en INVITADO.
   const displayName = user?.name ?? "INVITADO";
+  const nameToSave = initials ?? displayName;
   const lives = 3;
 
   useEffect(() => {
@@ -39,6 +45,17 @@ export function Reproductor({ game }: { game: Game }) {
   }, [score]);
 
   const endGame = () => setOver(true);
+
+  // Las vidas son una constante (el prototipo nunca las descuenta), así que no
+  // hay nada que reponer acá: quedan en 3.
+  const restart = () => {
+    setScore(0);
+    setLevel(1);
+    setPaused(false);
+    setOver(false);
+    setSaved(false);
+    setInitials(null);
+  };
 
   return (
     <div className="av-player fade-in">
@@ -113,8 +130,48 @@ export function Reproductor({ game }: { game: Game }) {
         </div>
       </div>
 
-      {/* El modal de fin de juego llega en el paso 12 del plan: por ahora FIN
-          solo congela el puntaje. */}
+      {over && (
+        // El backdrop no cierra el modal: en el prototipo su onClick es un no-op
+        // a propósito, para que la única salida sea una de las dos acciones.
+        <div className="modal-bd">
+          <div className="modal">
+            <h2>FIN DEL JUEGO</h2>
+            <div className="final-label">PUNTUACIÓN FINAL</div>
+            <div className="final">{score.toLocaleString("es-ES")}</div>
+            {!saved ? (
+              <div className="input-row">
+                <input
+                  value={nameToSave}
+                  onChange={(e) =>
+                    setInitials(e.target.value.toUpperCase().slice(0, 10))
+                  }
+                  placeholder="TUS INICIALES"
+                  aria-label="Tus iniciales"
+                />
+                <button
+                  className="btn yellow"
+                  onClick={() => {
+                    saveScore({ game: game.id, score, name: nameToSave });
+                    setSaved(true);
+                  }}
+                >
+                  GUARDAR PUNTUACIÓN
+                </button>
+              </div>
+            ) : (
+              <div className="toast-saved">▸ PUNTUACIÓN GUARDADA_</div>
+            )}
+            <div className="actions">
+              <button className="btn" onClick={restart}>
+                JUGAR DE NUEVO
+              </button>
+              <Link className="btn magenta" href="/">
+                VOLVER AL VAULT
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
