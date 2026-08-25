@@ -1,6 +1,6 @@
 # SPEC 01 — MVP visual: las cinco pantallas del prototipo en el App Router
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** —
 > **Date:** 2026-08-24
 > **Objective:** Portar las cinco pantallas del prototipo de `references/templates/` a rutas reales de Next.js 16, reproduciendo el diseño y el comportamiento de UI sin implementar ningún juego.
