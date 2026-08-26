@@ -1,6 +1,6 @@
 # SPEC 01 — MVP visual: las cinco pantallas del prototipo en el App Router
 
-> **Status:** Implementado
+> **Status:** Completado
 > **Depends on:** —
 > **Date:** 2026-08-24
 > **Objective:** Portar las cinco pantallas del prototipo de `references/templates/` a rutas reales de Next.js 16, reproduciendo el diseño y el comportamiento de UI sin implementar ningún juego.
@@ -119,30 +119,30 @@ Convenciones:
 
 ## Criterios de aceptación
 
-- [ ] `npm run build` termina sin errores ni errores de tipos.
-- [ ] `npx eslint app lib components` no reporta errores.
-- [ ] Las cinco rutas (`/`, `/juegos/caida`, `/jugar/caida`, `/salon`, `/acceso`) responden 200 y muestran su pantalla.
-- [ ] `app/page.tsx` ya no contiene nada del scaffold de `create-next-app` (ni logo de Next, ni links a Vercel).
-- [ ] El nav y el footer se ven en las cinco rutas.
-- [ ] El nav marca "Biblioteca" como activo en `/`, `/juegos/[id]` y `/jugar/[id]`, y "Salón de la Fama" en `/salon`.
-- [ ] En un viewport de 480 px la hamburguesa abre el drawer y un click en el backdrop lo cierra.
-- [ ] La biblioteca muestra las 8 tarjetas; el chip PUZZLE deja solo CAÍDA; buscar "zzz" muestra "NO HAY RESULTADOS".
-- [ ] Pasar el mouse por una tarjeta la inclina, y al salir vuelve a su posición.
-- [ ] Un click en una tarjeta lleva a `/juegos/<id>` del juego correcto.
-- [ ] `/juegos/caida` muestra título, descripción larga, los tres stats y un top-10 de 10 filas con las tres primeras destacadas.
-- [ ] Los puntajes de `/juegos/caida` son los mismos que muestra el prototipo para ese juego (misma semilla).
-- [ ] `/juegos/inexistente` y `/jugar/inexistente` muestran la pantalla 404 propia, no una página en blanco.
-- [ ] En `/jugar/caida` el puntaje sube solo, PAUSA lo congela y muestra el overlay "EN PAUSA", y REANUDAR lo descongela.
-- [ ] FIN abre el modal con la puntuación final; GUARDAR PUNTUACIÓN muestra "▸ PUNTUACIÓN GUARDADA_" y agrega una entrada a `av_scores`.
-- [ ] JUGAR DE NUEVO deja el puntaje en 0, las vidas en 3 y el nivel en 01.
-- [ ] En `/salon` las tabs cambian el podio y la tabla; el podio muestra 02 · 01 · 03 con el oro al centro.
-- [ ] Con sesión iniciada, `/salon` muestra las filas "TU MEJOR MARCA" y la fila amarilla con el nombre del usuario; sin sesión no aparecen.
-- [ ] Entrar desde `/acceso` con cualquier usuario y contraseña redirige a `/` y el nav muestra el nombre en mayúsculas (máximo 10 caracteres).
-- [ ] Recargar la página mantiene la sesión; el botón del nav la cierra y vuelve a mostrar "Iniciar Sesión".
-- [ ] "JUGAR COMO INVITADO" navega a `/` sin dejar sesión iniciada.
-- [ ] La consola del navegador no muestra errores ni warnings de hidratación en ninguna de las cinco rutas.
-- [ ] `app/globals.css` no tiene reglas nuevas, salvo clases faltantes copiadas del prototipo y documentadas en el commit.
-- [ ] `app/estilos/page.tsx` sigue existiendo y renderizando.
+- [x] `npm run build` termina sin errores ni errores de tipos.
+- [x] `npx eslint app lib components` no reporta errores.
+- [x] Las cinco rutas (`/`, `/juegos/caida`, `/jugar/caida`, `/salon`, `/acceso`) responden 200 y muestran su pantalla.
+- [x] `app/page.tsx` ya no contiene nada del scaffold de `create-next-app` (ni logo de Next, ni links a Vercel).
+- [x] El nav y el footer se ven en las cinco rutas.
+- [x] El nav marca "Biblioteca" como activo en `/`, `/juegos/[id]` y `/jugar/[id]`, y "Salón de la Fama" en `/salon`.
+- [x] En un viewport de 480 px la hamburguesa abre el drawer y un click en el backdrop lo cierra.
+- [x] La biblioteca muestra las 8 tarjetas; el chip PUZZLE deja solo CAÍDA; buscar "zzz" muestra "NO HAY RESULTADOS".
+- [x] Pasar el mouse por una tarjeta la inclina, y al salir vuelve a su posición.
+- [x] Un click en una tarjeta lleva a `/juegos/<id>` del juego correcto.
+- [x] `/juegos/caida` muestra título, descripción larga, los tres stats y un top-10 de 10 filas con las tres primeras destacadas.
+- [x] Los puntajes de `/juegos/caida` son los mismos que muestra el prototipo para ese juego (misma semilla).
+- [x] `/juegos/inexistente` y `/jugar/inexistente` muestran la pantalla 404 propia, no una página en blanco.
+- [x] En `/jugar/caida` el puntaje sube solo, PAUSA lo congela y muestra el overlay "EN PAUSA", y REANUDAR lo descongela.
+- [x] FIN abre el modal con la puntuación final; GUARDAR PUNTUACIÓN muestra "▸ PUNTUACIÓN GUARDADA_" y agrega una entrada a `av_scores`.
+- [x] JUGAR DE NUEVO deja el puntaje en 0, las vidas en 3 y el nivel en 01.
+- [x] En `/salon` las tabs cambian el podio y la tabla; el podio muestra 02 · 01 · 03 con el oro al centro.
+- [x] Con sesión iniciada, `/salon` muestra las filas "TU MEJOR MARCA" y la fila amarilla con el nombre del usuario; sin sesión no aparecen.
+- [x] Entrar desde `/acceso` con cualquier usuario y contraseña redirige a `/` y el nav muestra el nombre en mayúsculas (máximo 10 caracteres).
+- [x] Recargar la página mantiene la sesión; el botón del nav la cierra y vuelve a mostrar "Iniciar Sesión".
+- [x] "JUGAR COMO INVITADO" navega a `/` sin dejar sesión iniciada.
+- [x] La consola del navegador no muestra errores ni warnings de hidratación en ninguna de las cinco rutas.
+- [x] `app/globals.css` no tiene reglas nuevas, salvo clases faltantes copiadas del prototipo y documentadas en el commit.
+- [x] `app/estilos/page.tsx` sigue existiendo y renderizando.
 
 ## Decisiones
 
