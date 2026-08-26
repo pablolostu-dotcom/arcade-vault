@@ -20,6 +20,8 @@ No hay test runner instalado: no existe script `test` ni dependencia de vitest/j
 
 ## Estructura del repo
 
+Todas las capturas de Playwright (MCP) van a `.playwright-screenshots/` — el servidor MCP está configurado con `--output-dir` apuntando ahí y el directorio está en `.gitignore`. Pasá solo el nombre del archivo, no una ruta.
+
 La raíz de git es `D:\Curso_Claude` (el curso completo), no este directorio. Este proyecto es el subdirectorio `05-arcade-vault`; los skills `spec` / `spec-impl` viven a nivel del curso, en `../.claude/skills/`.
 
 ## Arquitectura

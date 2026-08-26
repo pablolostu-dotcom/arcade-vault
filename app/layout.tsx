@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { Press_Start_2P, JetBrains_Mono, Courier_Prime } from "next/font/google";
 import "./globals.css";
 
+import { Nav } from "@/components/nav";
+import { SiteFooter } from "@/components/site-footer";
+import { SessionProvider } from "@/lib/session";
+
 // Mismas familias que el prototipo (references/templates/Arcade Vault.html),
 // pero self-hosted por next/font en lugar del <link> a Google Fonts.
 const pressStart = Press_Start_2P({
@@ -40,7 +44,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {/* Capas ambientales: grilla en perspectiva + scanlines, y grano encima */}
         <div className="av-bg" />
         <div className="av-noise" />
-        <div id="root">{children}</div>
+        <div id="root">
+          <SessionProvider>
+            <Nav />
+            <main className="av-main">{children}</main>
+            <SiteFooter />
+          </SessionProvider>
+        </div>
       </body>
     </html>
   );

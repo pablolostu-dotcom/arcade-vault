@@ -143,6 +143,17 @@
   /* ===== app frame ===== */
   #root { position: relative; z-index: 2; display: flex; flex-direction: column; min-height: 100%; }
   .av-main { flex: 1; }
+  /* El prototipo estila el footer inline (references/templates/app.jsx);
+     mismos valores, movidos a una clase. */
+  .av-footer {
+    border-top: 1px solid var(--line);
+    padding: 20px 32px;
+    text-align: center;
+    color: var(--ink-faint);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+  }
 
   /* ===== pixel + neon text ===== */
   .pixel { font-family: var(--pixel); letter-spacing: 0.04em; line-height: 1.25; text-transform: uppercase; }
