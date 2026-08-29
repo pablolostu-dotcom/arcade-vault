@@ -42,7 +42,7 @@ export default function NotFound() {
           No hay ninguna pantalla en esta dirección. Comprueba el enlace o vuelve a la
           biblioteca para elegir un juego.
         </p>
-        <Link className="btn lg" href="/">
+        <Link className="btn lg" href="/juegos">
           VOLVER AL VAULT
         </Link>
       </div>

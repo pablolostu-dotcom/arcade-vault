@@ -24,13 +24,13 @@ export function AuthForm() {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     signIn(user || "PLAYER1");
-    router.push("/");
+    router.push("/juegos");
   };
 
   // El prototipo hace onLogin(null) acá: entrar como invitado no deja sesión.
   const playAsGuest = () => {
     signOut();
-    router.push("/");
+    router.push("/juegos");
   };
 
   return (

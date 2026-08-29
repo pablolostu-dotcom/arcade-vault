@@ -1,6 +1,6 @@
 # SPEC 02 — Home: la landing del vault en la raíz
 
-> **Status:** APROBADO
+> **Status:** IMPLEMENTADO
 > **Depends on:** SPEC 01
 > **Date:** 2026-08-26
 > **Objective:** Portar la landing de `references/templates/home-about/home.jsx` a la ruta `/`, moviendo la Biblioteca a `/juegos` y ampliando el nav a los cuatro links del prototipo nuevo.

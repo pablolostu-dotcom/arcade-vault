@@ -15,11 +15,13 @@ export function Nav() {
   const pathname = usePathname();
   const { user, signOut } = useSession();
 
-  // "Biblioteca" queda activa también en el detalle y en el reproductor,
-  // igual que en el prototipo (detalle y player cuentan como biblioteca).
-  const isLibrary =
-    pathname === "/" || pathname.startsWith("/juegos") || pathname.startsWith("/jugar");
+  // Estado activo del mapa de rutas del SPEC 02. "Biblioteca" abarca también el
+  // detalle y el reproductor, igual que en el prototipo (detalle y player
+  // cuentan como biblioteca).
+  const isHome = pathname === "/";
+  const isLibrary = pathname.startsWith("/juegos") || pathname.startsWith("/jugar");
   const isSalon = pathname === "/salon";
+  const isAbout = pathname === "/acerca-de";
   const isAuth = pathname === "/acceso";
 
   const close = () => setOpen(false);
@@ -34,11 +36,17 @@ export function Nav() {
           </div>
         </Link>
         <div className="links">
-          <Link className={isLibrary ? "active" : ""} href="/">
+          <Link className={isHome ? "active" : ""} href="/">
+            Inicio
+          </Link>
+          <Link className={isLibrary ? "active" : ""} href="/juegos">
             Biblioteca
           </Link>
           <Link className={isSalon ? "active" : ""} href="/salon">
             Salón de la Fama
+          </Link>
+          <Link className={isAbout ? "active" : ""} href="/acerca-de">
+            Acerca de
           </Link>
         </div>
         <div className="spacer"></div>
@@ -74,11 +82,17 @@ export function Nav() {
         <div className="pixel neon-cyan" style={{ fontSize: 11, marginBottom: 16 }}>
           MENÚ
         </div>
-        <Link className={isLibrary ? "active" : ""} href="/" onClick={close}>
+        <Link className={isHome ? "active" : ""} href="/" onClick={close}>
+          Inicio
+        </Link>
+        <Link className={isLibrary ? "active" : ""} href="/juegos" onClick={close}>
           Biblioteca
         </Link>
         <Link className={isSalon ? "active" : ""} href="/salon" onClick={close}>
           Salón de la Fama
+        </Link>
+        <Link className={isAbout ? "active" : ""} href="/acerca-de" onClick={close}>
+          Acerca de
         </Link>
         <Link className={isAuth ? "active" : ""} href="/acceso" onClick={close}>
           {user ? "Cuenta" : "Iniciar Sesión"}
