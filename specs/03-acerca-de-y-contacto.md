@@ -1,6 +1,6 @@
 # SPEC 03 — Acerca de: la pantalla real y el envío de correo con Resend
 
-> **Status:** APROBADO
+> **Status:** Completado
 > **Depends on:** SPEC 02
 > **Date:** 2026-08-29
 > **Objective:** Portar `references/templates/home-about/about.jsx` a `/acerca-de` reemplazando el stub, y hacer que su formulario de contacto envíe un correo real con Resend desde una Server Action.
@@ -129,30 +129,30 @@ Ninguna lleva prefijo `NEXT_PUBLIC_`: las tres se leen solo dentro de la Server 
 
 ## Criterios de aceptación
 
-- [ ] `npm run build` termina sin errores ni errores de tipos.
-- [ ] `npx eslint app lib components` no reporta errores.
-- [ ] Las ocho rutas (`/`, `/juegos`, `/juegos/caida`, `/jugar/caida`, `/salon`, `/acceso`, `/acerca-de`, `/estilos`) responden 200.
+- [x] `npm run build` termina sin errores ni errores de tipos.
+- [x] `npx eslint app lib components` no reporta errores.
+- [x] Las ocho rutas (`/`, `/juegos`, `/juegos/caida`, `/jugar/caida`, `/salon`, `/acceso`, `/acerca-de`, `/estilos`) responden 200.
 - [x] `app/globals.css` no cambió **por trabajo de este spec**. Ver la excepción anotada abajo: la rama incluye un arreglo de `.hero-scroll` que es del home (SPEC 02), no de Acerca de.
-- [ ] `/acerca-de` muestra el hero con el kicker "▸ ACERCA DE", el título, el texto de misión y las 3 tarjetas de highlight con su icono pixel y su color (magenta, cian, verde).
-- [ ] El `about-divider` muestra 24 píxeles parpadeando con retardo escalonado y no es alcanzable por lector de pantalla (`aria-hidden`).
-- [ ] El divisor y la sección de contacto arrancan invisibles y aparecen al entrar en viewport; el hero se ve de entrada, sin `reveal`.
-- [ ] El formulario muestra los 3 campos con sus labels y placeholders del prototipo (`px_kai`, `jugador@vault.gg`, `Cuéntanos qué tienes en mente…`).
-- [ ] Enviar con cualquier campo vacío sacude el formulario y **no** genera ninguna petición de red.
-- [ ] Durante el envío el botón queda deshabilitado y dice "ENVIANDO…".
-- [ ] Un envío válido con `RESEND_API_KEY` configurada entrega el correo en `CONTACT_TO_EMAIL`, con asunto `[Arcade Vault] Mensaje de <NOMBRE>` y `reply-to` igual al correo del formulario.
-- [ ] Tras el éxito, la terminal muestra las cuatro líneas `[OK]` y el nombre del visitante en mayúsculas.
-- [ ] "ENVIAR OTRO MENSAJE" vuelve al formulario con los tres campos vacíos y sin mensaje de error.
-- [ ] Con una `RESEND_API_KEY` inválida, el formulario muestra "NO SE PUDO ENVIAR EL MENSAJE. INTÉNTALO DE NUEVO.", se sacude y **conserva lo escrito**.
-- [ ] Un correo mal formado (`asdf`) devuelve el error de validación aunque el navegador no lo bloquee.
-- [ ] Un mensaje de más de 2.000 caracteres o un nombre de más de 80 devuelve el error de validación.
-- [ ] El cuarto envío seguido desde la misma IP dentro de 10 minutos muestra "DEMASIADOS ENVÍOS. ESPERA UNOS MINUTOS."
-- [ ] Un envío con el campo honeypot relleno muestra la terminal de éxito y **no** manda ningún correo.
-- [ ] Sin `RESEND_API_KEY` en desarrollo, el envío muestra la terminal de éxito y el mensaje aparece en la consola del servidor.
-- [ ] Buscar `RESEND_API_KEY`, `CONTACT_TO_EMAIL` y `CONTACT_FROM_EMAIL` en `.next/static/` no devuelve resultados.
-- [ ] `.env.example` está versionado con las tres variables y `.env.local` no aparece en `git status`.
-- [ ] El nav marca "Acerca de" como link activo en `/acerca-de` y el resto de las pantallas del SPEC 02 se ven idénticas a antes.
-- [ ] En un viewport de 480 px la pantalla no genera scroll horizontal, el `highlight-row` colapsa a una columna y el `contact-grid` a una sola.
-- [ ] La consola del navegador no muestra errores ni warnings de hidratación en `/acerca-de`.
+- [x] `/acerca-de` muestra el hero con el kicker "▸ ACERCA DE", el título, el texto de misión y las 3 tarjetas de highlight con su icono pixel y su color (magenta, cian, verde).
+- [x] El `about-divider` muestra 24 píxeles parpadeando con retardo escalonado y no es alcanzable por lector de pantalla (`aria-hidden`).
+- [x] El divisor y la sección de contacto arrancan invisibles y aparecen al entrar en viewport; el hero se ve de entrada, sin `reveal`.
+- [x] El formulario muestra los 3 campos con sus labels y placeholders del prototipo (`px_kai`, `jugador@vault.gg`, `Cuéntanos qué tienes en mente…`).
+- [x] Enviar con cualquier campo vacío sacude el formulario y **no** genera ninguna petición de red.
+- [x] Durante el envío el botón queda deshabilitado y dice "ENVIANDO…".
+- [x] Un envío válido con `RESEND_API_KEY` configurada entrega el correo en `CONTACT_TO_EMAIL`, con asunto `[Arcade Vault] Mensaje de <NOMBRE>` y `reply-to` igual al correo del formulario.
+- [x] Tras el éxito, la terminal muestra las cuatro líneas `[OK]` y el nombre del visitante en mayúsculas.
+- [x] "ENVIAR OTRO MENSAJE" vuelve al formulario con los tres campos vacíos y sin mensaje de error.
+- [x] Con una `RESEND_API_KEY` inválida, el formulario muestra "NO SE PUDO ENVIAR EL MENSAJE. INTÉNTALO DE NUEVO.", se sacude y **conserva lo escrito**.
+- [x] Un correo mal formado (`asdf`) devuelve el error de validación aunque el navegador no lo bloquee.
+- [x] Un mensaje de más de 2.000 caracteres o un nombre de más de 80 devuelve el error de validación.
+- [ ] El cuarto envío seguido desde la misma IP dentro de 10 minutos muestra "DEMASIADOS ENVÍOS. ESPERA UNOS MINUTOS." — **NO PROBADO**, por decisión del autor: verificarlo exigía quemar los 3 envíos permitidos y mandar tres correos reales. La rama existe y está tipada, pero no se ejecutó.
+- [x] Un envío con el campo honeypot relleno muestra la terminal de éxito y **no** manda ningún correo.
+- [x] Sin `RESEND_API_KEY` en desarrollo, el envío muestra la terminal de éxito y el mensaje aparece en la consola del servidor.
+- [x] Buscar `RESEND_API_KEY`, `CONTACT_TO_EMAIL` y `CONTACT_FROM_EMAIL` en `.next/static/` no devuelve resultados.
+- [x] `.env.example` está versionado con las tres variables y `.env.local` no aparece en `git status`.
+- [x] El nav marca "Acerca de" como link activo en `/acerca-de` y el resto de las pantallas del SPEC 02 se ven idénticas a antes.
+- [x] En un viewport de 480 px la pantalla no genera scroll horizontal, el `highlight-row` colapsa a una columna y el `contact-grid` a una sola.
+- [x] La consola del navegador no muestra errores ni warnings de hidratación en `/acerca-de`.
 
 ## Excepción: un cambio en `app/globals.css` ajeno a este spec
 
