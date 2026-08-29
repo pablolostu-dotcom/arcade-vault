@@ -1026,7 +1026,14 @@
 }
 .home-ctas { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
 .hero-scroll {
-  position: absolute; left: 50%; bottom: -20px; transform: translateX(-50%);
+  /* El prototipo usa bottom: -20px, pero el ancestro posicionado es
+     .home-hero-inner, que termina justo al pie de los botones: como el
+     indicador mide 35px de alto, su borde superior quedaba 15px POR ENCIMA
+     de esa línea y "DESLIZA" se leía encima de "EXPLORAR JUEGOS".
+     -60px lo baja 40px y lo deja 25px por debajo de los botones. El valor
+     coincide con el padding-bottom del hero, así que en el peor caso queda
+     justo sobre su borde y nunca lo recorta el overflow: hidden. */
+  position: absolute; left: 50%; bottom: -60px; transform: translateX(-50%);
   font-family: var(--pixel); font-size: 9px; letter-spacing: 0.2em; color: var(--ink-faint);
   display: flex; flex-direction: column; align-items: center; gap: 8px;
 }
