@@ -16,9 +16,16 @@ type RevealProps = {
   /** Contenedor a renderizar. El home usa <section>; el about también <div>. */
   as?: ElementType;
   className?: string;
+  /** Para nodos decorativos que además revelan, como el about-divider. */
+  ariaHidden?: boolean;
 };
 
-export function Reveal({ children, as: Tag = "section", className = "" }: RevealProps) {
+export function Reveal({
+  children,
+  as: Tag = "section",
+  className = "",
+  ariaHidden,
+}: RevealProps) {
   const ref = useRef<HTMLElement>(null);
   const [shown, setShown] = useState(false);
 
@@ -54,7 +61,7 @@ export function Reveal({ children, as: Tag = "section", className = "" }: Reveal
   const classes = ["reveal", className, shown ? "in" : ""].filter(Boolean).join(" ");
 
   return (
-    <Tag ref={ref} className={classes}>
+    <Tag ref={ref} className={classes} aria-hidden={ariaHidden}>
       {children}
     </Tag>
   );
