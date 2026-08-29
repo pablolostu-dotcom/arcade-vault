@@ -146,3 +146,41 @@ export function seededScores(seed: number, count = 12): ScoreRow[] {
   }
   return rows.sort((a, b) => b.score - a.score).map((r, i) => ({ ...r, rank: i + 1 }));
 }
+
+/** Fila del ticker "ÚLTIMAS PUNTUACIONES" del home. */
+export type LiveScore = {
+  player: string;   // "NEONFOX"
+  game: string;     // "Caída" — texto libre, no un id de GAMES
+  score: number;
+  when: string;     // "hace 2 min" — literal, no se calcula
+  color: Accent;    // clase neon-* de la columna del jugador
+};
+
+/** Fila de "TOP JUGADORES · HOY" del home. */
+export type TopPlayer = {
+  rank: number;
+  player: string;
+  score: number;
+};
+
+// Las dos tablas del bloque de actividad del home, copiadas literal de los
+// arrays inline de references/templates/home-about/home.jsx. Son mock: no se
+// cruzan con GAMES (los títulos van en capitalización de título, no en
+// mayúsculas) ni se derivan de av_scores.
+export const LIVE_SCORES: readonly LiveScore[] = [
+  { player: "NEONFOX",  game: "Caída",         score: 184220, when: "hace 2 min",  color: "magenta" },
+  { player: "PX_KAI",   game: "Glotón",        score: 96400,  when: "hace 5 min",  color: "yellow" },
+  { player: "Z3R0COOL", game: "Invasores",     score: 54190,  when: "hace 8 min",  color: "green" },
+  { player: "VAULT_07", game: "Rocas",         score: 41200,  when: "hace 12 min", color: "cyan" },
+  { player: "GLITCHA",  game: "Bloque Buster", score: 28450,  when: "hace 18 min", color: "cyan" },
+  { player: "ARKADYA",  game: "Serpentina",    score: 7820,   when: "hace 24 min", color: "green" },
+  { player: "CYBER_LU", game: "Ranaria",       score: 18900,  when: "hace 31 min", color: "yellow" },
+];
+
+export const TOP_TODAY: readonly TopPlayer[] = [
+  { rank: 1, player: "NEONFOX",  score: 312840 },
+  { rank: 2, player: "PX_KAI",   score: 248110 },
+  { rank: 3, player: "M00NRYU",  score: 196720 },
+  { rank: 4, player: "VAULT_07", score: 154300 },
+  { rank: 5, player: "GLITCHA",  score: 138900 },
+];

@@ -165,7 +165,7 @@ export function Reproductor({ game }: { game: Game }) {
               <button className="btn" onClick={restart}>
                 JUGAR DE NUEVO
               </button>
-              <Link className="btn magenta" href="/">
+              <Link className="btn magenta" href="/juegos">
                 VOLVER AL VAULT
               </Link>
             </div>
