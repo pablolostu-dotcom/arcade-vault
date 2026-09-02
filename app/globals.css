@@ -779,6 +779,27 @@
     pointer-events: none;
   }
 
+  /* Aviso de teclado. Oculto por defecto y visible solo con puntero grueso:
+     lo decide el navegador, sin que el render participe. Queda por debajo del
+     overlay de pausa (z-index 5). */
+  .keyboard-notice { display: none; }
+  @media (pointer: coarse) {
+    .keyboard-notice {
+      position: absolute; inset: 0; z-index: 4;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 12px; padding: 24px; text-align: center;
+      background: rgba(0,0,0,0.82);
+    }
+    .keyboard-notice .t {
+      font-family: var(--pixel); font-size: 12px; line-height: 1.8;
+      color: var(--yellow); text-shadow: 0 0 8px rgba(245,255,0,0.5);
+    }
+    .keyboard-notice .s {
+      font-family: var(--mono); font-size: 11px;
+      color: var(--ink-dim); letter-spacing: 0.14em;
+    }
+  }
+
   .game-arena {
     position: absolute; inset: 0;
     display: flex; align-items: center; justify-content: center;

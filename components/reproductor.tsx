@@ -169,6 +169,16 @@ export function Reproductor({ game }: { game: Game }) {
               <div className="player-ship"></div>
             </div>
           )}
+          {/* Siempre en el DOM: quien lo muestra u oculta es la media query
+              (pointer: coarse) de globals.css. Detectar el dispositivo en JS
+              haria que servidor y cliente rendericen distinto en el primer
+              paso, que es justo el problema de hidratacion que evitamos. */}
+          {withEngine && (
+            <div className="keyboard-notice">
+              <div className="t">{game.title} REQUIERE TECLADO</div>
+              <div className="s">Conecta uno para rotar, propulsar y disparar</div>
+            </div>
+          )}
           {paused && (
             <div className="crt-content" style={{ background: "rgba(0,0,0,0.6)", zIndex: 5 }}>
               <div>

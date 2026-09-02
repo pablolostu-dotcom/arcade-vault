@@ -52,6 +52,22 @@ const RADII = [0, 16, 30, 50]; // por tamaño 1, 2, 3
 const SPEEDS = [0, 85, 55, 32]; // velocidad base por tamaño
 const POINTS = [0, 100, 50, 20]; // puntos por tamaño
 
+/**
+ * La paleta del portal, escrita a mano. A propósito NO se leen de :root con
+ * getComputedStyle: un motor que necesita que exista una hoja de estilos para
+ * dibujar es un motor que falla en silencio.
+ */
+const COLORS = {
+  space: "#000",
+  ship: "#00f5ff", // --cyan
+  asteroid: "#8a8fb5", // --ink-dim
+  bullet: "#f5ff00", // --yellow
+  powerUp: "#ff006e", // --magenta
+  /** La llama queda naranja, como en el original: es fuego, no un acento. */
+  thrust: "rgba(255, 130, 0, 0.85)",
+  particle: (alpha: number) => `rgba(255, 0, 110, ${alpha})`, // --magenta
+};
+
 /** Las teclas del juego: se les corta el scroll de la página mientras se juega. */
 const HANDLED_KEYS = new Set(["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space"]);
 
@@ -120,7 +136,7 @@ export function createAsteroidesEngine(
     }
 
     draw() {
-      ctx.fillStyle = "#fff";
+      ctx.fillStyle = COLORS.bullet;
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
       ctx.fill();
@@ -180,7 +196,7 @@ export function createAsteroidesEngine(
       ctx.save();
       ctx.translate(this.x, this.y);
       ctx.rotate(this.rot);
-      ctx.strokeStyle = "#fff";
+      ctx.strokeStyle = COLORS.asteroid;
       ctx.lineWidth = 1.5;
       ctx.lineJoin = "round";
       ctx.beginPath();
@@ -226,12 +242,12 @@ export function createAsteroidesEngine(
       ctx.save();
       ctx.translate(this.x, this.y);
       ctx.rotate(Math.PI / 4);
-      ctx.strokeStyle = "#0ff";
+      ctx.strokeStyle = COLORS.powerUp;
       ctx.lineWidth = 2;
       const r = this.radius * pulse;
       ctx.strokeRect(-r, -r, r * 2, r * 2);
       ctx.restore();
-      ctx.fillStyle = "#0ff";
+      ctx.fillStyle = COLORS.powerUp;
       ctx.font = "bold 12px monospace";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -315,7 +331,7 @@ export function createAsteroidesEngine(
       ctx.save();
       ctx.translate(this.x, this.y);
       ctx.rotate(this.angle);
-      ctx.strokeStyle = "#fff";
+      ctx.strokeStyle = COLORS.ship;
       ctx.lineWidth = 1.5;
       ctx.lineJoin = "round";
 
@@ -334,7 +350,7 @@ export function createAsteroidesEngine(
         ctx.moveTo(-8, -4);
         ctx.lineTo(-8 - rand(6, 14), 0);
         ctx.lineTo(-8, 4);
-        ctx.strokeStyle = "rgba(255, 130, 0, 0.85)";
+        ctx.strokeStyle = COLORS.thrust;
         ctx.stroke();
       }
 
@@ -372,7 +388,7 @@ export function createAsteroidesEngine(
 
     draw() {
       const alpha = this.ttl / this.life;
-      ctx.strokeStyle = `rgba(255,255,255,${alpha.toFixed(2)})`;
+      ctx.strokeStyle = COLORS.particle(Number(alpha.toFixed(2)));
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(this.x, this.y);
@@ -579,7 +595,7 @@ export function createAsteroidesEngine(
   // ── Draw ────────────────────────────────────────────────────────────────────
   // Sin drawHUD() ni drawOverlay(): el HUD y el fin de partida son de React.
   function draw() {
-    ctx.fillStyle = "#000";
+    ctx.fillStyle = COLORS.space;
     ctx.fillRect(0, 0, W, H);
 
     particles.forEach((p) => p.draw());

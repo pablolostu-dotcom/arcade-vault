@@ -1,6 +1,6 @@
 # SPEC 05 — ASTEROIDES: el primer juego jugable del vault
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 04
 > **Date:** 2026-09-02
 > **Objective:** Portar el clon de Asteroids de `references/started-games/02-asteroids/` a un motor de canvas en TypeScript y montarlo en `/jugar/asteroides` como noveno juego del catálogo, dejando `<Reproductor>` como chasis único que sigue simulando los otros ocho.
