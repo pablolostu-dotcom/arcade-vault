@@ -1,21 +1,39 @@
 "use client";
 
 // ===== components/reproductor.tsx =====
-// Portado de references/templates/reproductor.jsx (GamePlayer). No hay ningún
-// juego: el puntaje es un setInterval que suma un delta aleatorio, igual que el
-// prototipo. Math.random() solo corre dentro del efecto, nunca en el render, así
-// que el HTML del servidor y el del cliente coinciden.
+// Portado de references/templates/reproductor.jsx (GamePlayer). Es el chasis
+// único de los nueve juegos y adentro se bifurca una sola vez, por hasEngine():
+//
+//   - con motor (asteroides): el HUD sigue a los snapshots del canvas.
+//   - sin motor (los otros ocho): el puntaje es un setInterval que suma un
+//     delta aleatorio, igual que el prototipo. Math.random() solo corre dentro
+//     del efecto, nunca en el render, así que el HTML del servidor y el del
+//     cliente coinciden.
+//
+// El import de hasEngine es estático (es un mapa de strings), pero el motor
+// cuelga de un import() dinámico adentro del registro: los ocho simulados no
+// pagan su peso.
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
+import { GameCanvas, type GameCanvasHandle } from "@/components/game-canvas";
 import type { Game } from "@/lib/data";
+import type { GameSnapshot } from "@/lib/games/asteroides/engine";
+import { hasEngine } from "@/lib/games/registry";
 import { useSession } from "@/lib/session";
 
 export function Reproductor({ game }: { game: Game }) {
   const { user, saveScore } = useSession();
+  const withEngine = hasEngine(game.id);
+  const canvasRef = useRef<GameCanvasHandle>(null);
+
   const [score, setScore] = useState(0);
   const [level, setLevel] = useState(1);
+  // Antes era la constante 3: el prototipo nunca descuenta vidas. Con motor sí
+  // se descuentan, así que pasa a ser estado. Sin motor arranca y se queda en 3.
+  const [lives, setLives] = useState(3);
+  const [tripleShot, setTripleShot] = useState(0);
   const [paused, setPaused] = useState(false);
   const [over, setOver] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -27,30 +45,64 @@ export function Reproductor({ game }: { game: Game }) {
   // después del primer render, así que leerlo derivado evita quedar en INVITADO.
   const displayName = user?.name ?? "INVITADO";
   const nameToSave = initials ?? displayName;
-  const lives = 3;
 
   useEffect(() => {
-    if (over || paused) return;
-    const t = setInterval(
-      () => setScore((s) => s + Math.floor(10 + Math.random() * 90)),
-      220,
-    );
+    if (withEngine || over || paused) return;
+    const t = setInterval(() => setScore((s) => s + Math.floor(10 + Math.random() * 90)), 220);
     return () => clearInterval(t);
-  }, [over, paused]);
+  }, [withEngine, over, paused]);
 
   useEffect(() => {
+    if (withEngine) return;
     // Mismo criterio que el prototipo: un nivel cada ~2500 puntos.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (score > 0 && score % 2500 < 100) setLevel((l) => l + 1);
-  }, [score]);
+  }, [withEngine, score]);
 
-  const endGame = () => setOver(true);
+  // El motor solo emite cuando algún valor cambió: esto no corre por frame.
+  const handleSnapshot = useCallback((snapshot: GameSnapshot) => {
+    setScore(snapshot.score);
+    setLives(snapshot.lives);
+    setLevel(snapshot.level);
+    setTripleShot(snapshot.tripleShot);
+  }, []);
 
-  // Las vidas son una constante (el prototipo nunca las descuenta), así que no
-  // hay nada que reponer acá: quedan en 3.
+  const handleGameOver = useCallback((finalScore: number) => {
+    setScore(finalScore);
+    setOver(true);
+  }, []);
+
+  const togglePause = useCallback(() => {
+    if (over) return;
+    if (paused) canvasRef.current?.resume();
+    else canvasRef.current?.pause();
+    setPaused(!paused);
+  }, [over, paused]);
+
+  // Escape hace lo mismo que el botón. Solo con motor: los ocho simulados
+  // tienen que comportarse exactamente igual que antes de esta spec.
+  useEffect(() => {
+    if (!withEngine) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") togglePause();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [withEngine, togglePause]);
+
+  // Con motor, end() dispara onGameOver y ese callback abre el modal: así el
+  // botón FIN y perder la última vida terminan por el mismo camino.
+  const endGame = () => {
+    if (withEngine) canvasRef.current?.end();
+    else setOver(true);
+  };
+
   const restart = () => {
+    canvasRef.current?.restart();
     setScore(0);
     setLevel(1);
+    setLives(3);
+    setTripleShot(0);
     setPaused(false);
     setOver(false);
     setSaved(false);
@@ -79,9 +131,15 @@ export function Reproductor({ game }: { game: Game }) {
             <div className="l">Nivel</div>
             <div className="v">{String(level).padStart(2, "0")}</div>
           </div>
+          {tripleShot > 0 && (
+            <div className="hud-stat triple">
+              <div className="l">Triple disparo</div>
+              <div className="v">3x · {tripleShot.toFixed(1)}s</div>
+            </div>
+          )}
         </div>
         <div className="hud-actions">
-          <button className="btn yellow" onClick={() => setPaused((p) => !p)}>
+          <button className="btn yellow" onClick={togglePause}>
             {paused ? "REANUDAR" : "PAUSA"}
           </button>
           <button className="btn magenta" onClick={endGame}>
@@ -95,13 +153,22 @@ export function Reproductor({ game }: { game: Game }) {
 
       <div className="crt">
         <div className="crt-screen">
-          <div className="game-arena">
-            <div className="grid-floor"></div>
-            <div className="enemy e1"></div>
-            <div className="enemy e2"></div>
-            <div className="enemy e3"></div>
-            <div className="player-ship"></div>
-          </div>
+          {withEngine ? (
+            <GameCanvas
+              ref={canvasRef}
+              gameId={game.id}
+              onSnapshot={handleSnapshot}
+              onGameOver={handleGameOver}
+            />
+          ) : (
+            <div className="game-arena">
+              <div className="grid-floor"></div>
+              <div className="enemy e1"></div>
+              <div className="enemy e2"></div>
+              <div className="enemy e3"></div>
+              <div className="player-ship"></div>
+            </div>
+          )}
           {paused && (
             <div className="crt-content" style={{ background: "rgba(0,0,0,0.6)", zIndex: 5 }}>
               <div>
@@ -142,9 +209,7 @@ export function Reproductor({ game }: { game: Game }) {
               <div className="input-row">
                 <input
                   value={nameToSave}
-                  onChange={(e) =>
-                    setInitials(e.target.value.toUpperCase().slice(0, 10))
-                  }
+                  onChange={(e) => setInitials(e.target.value.toUpperCase().slice(0, 10))}
                   placeholder="TUS INICIALES"
                   aria-label="Tus iniciales"
                 />
