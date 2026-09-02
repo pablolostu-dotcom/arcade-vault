@@ -553,6 +553,61 @@
     filter: drop-shadow(0 0 6px rgba(0,245,255,0.4));
   }
 
+  /* ASTEROIDES: vector wireframe, no siluetas rellenas — es lo que lo separa
+     de ROCAS en la grilla. Los colores son los mismos roles que usa el motor:
+     nave cyan, rocas ink-dim, balas yellow, fractura magenta. */
+  .cover-asteroides {
+    background:
+      /* la bala en vuelo y su estela, saliendo de la nariz de la nave */
+      radial-gradient(circle at 51% 47%, var(--yellow) 0 3.5px, rgba(245,255,0,0.35) 3.5px 7px, transparent 8px),
+      radial-gradient(circle at 43% 55%, rgba(245,255,0,0.8) 0 2.5px, transparent 3.5px),
+      radial-gradient(circle at 36% 62%, rgba(245,255,0,0.45) 0 2px, transparent 3px),
+      /* roca lejana, todavía entera */
+      radial-gradient(circle at 79% 78%, transparent 0 7px, rgba(138,143,181,0.55) 7px 8.5px, transparent 9px),
+      /* campo de estrellas */
+      radial-gradient(circle at 14% 18%, rgba(230,233,255,0.85) 0 1px, transparent 2px),
+      radial-gradient(circle at 33% 74%, rgba(230,233,255,0.5) 0 1px, transparent 2px),
+      radial-gradient(circle at 58% 12%, rgba(0,245,255,0.75) 0 1px, transparent 2px),
+      radial-gradient(circle at 88% 20%, rgba(230,233,255,0.6) 0 1px, transparent 2px),
+      radial-gradient(circle at 92% 47%, rgba(230,233,255,0.35) 0 1px, transparent 2px),
+      radial-gradient(circle at 24% 40%, rgba(0,245,255,0.45) 0 1px, transparent 2px),
+      /* el vacío */
+      radial-gradient(circle at 66% 32%, #12122c, #000 72%);
+  }
+  /* La roca grande: el anillo da el contorno hueco y el clip-path lo faceta,
+     igual que el polígono irregular que dibuja el motor. La fractura magenta
+     queda recortada dentro de la silueta. */
+  .cover-asteroides::after {
+    content: "";
+    position: absolute;
+    left: 52%; top: 8%;
+    width: 34%; aspect-ratio: 1;
+    background: var(--ink-dim);
+    /* Contorno hueco de trazo fino: el path recorre el polígono exterior y
+       vuelve por el interior en sentido contrario, así el relleno queda solo
+       en el borde. Diez vértices de radio irregular, como los que genera el
+       motor con rand(0.6, 1.0). */
+    clip-path: polygon(
+      97% 50%, 75.9% 68.8%, 63.3% 90.9%, 41% 77.6%, 17.6% 73.5%,
+      4% 50%, 23.3% 30.6%, 36.4% 8.2%, 59.3% 21.5%, 84% 25.3%, 97% 50%,
+      94% 50%, 81.6% 27.1%, 58.3% 24.3%, 37.3% 11%, 25.7% 32.4%,
+      7% 50%, 20.1% 71.7%, 42% 74.7%, 62.4% 88%, 73.5% 67%, 94% 50%
+    );
+    filter: drop-shadow(0 0 6px rgba(138,143,181,0.45));
+  }
+  /* La nave: la misma silueta de 4 puntos del motor (nariz, ala, muesca
+     trasera, ala), apuntando a la roca. */
+  .cover-asteroides::before {
+    content: "";
+    position: absolute;
+    left: 16%; bottom: 20%;
+    width: 15%; aspect-ratio: 32 / 18;
+    background: var(--cyan);
+    clip-path: polygon(100% 50%, 0 0, 15.6% 50%, 0 100%);
+    transform: rotate(-38deg);
+    filter: drop-shadow(0 0 7px rgba(0,245,255,0.8));
+  }
+
   /* ===== detail screen ===== */
   .av-detail {
     display: grid;
