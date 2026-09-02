@@ -113,6 +113,17 @@ export const GAMES: Game[] = [
     best: 24,
     plays: "4.2K",
   },
+  {
+    id: "asteroides",
+    title: "ASTEROIDES",
+    short: "Parte las rocas antes de que te partan a vos.",
+    long: "Una nave de vectores a la deriva en el vacío: rota, propulsa y dispara mientras la inercia te sigue arrastrando. Cada roca grande se parte en dos medianas, y cada mediana en dos pequeñas. El nivel no termina hasta que no queda ni un fragmento en pantalla.",
+    cat: "SHOOTER",
+    cover: "cover-asteroides",
+    color: "cyan",
+    best: 33780,
+    plays: "2.1K",
+  },
 ];
 
 export const CATS: readonly string[] = ["TODOS", "ARCADE", "PUZZLE", "SHOOTER", "VERSUS"];
