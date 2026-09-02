@@ -765,6 +765,18 @@
   }
 
   /* fake in-screen game */
+  /* El canvas del juego adentro del CRT. El elemento mide 4:3 igual que
+     .crt-screen, así que las scanlines y la viñeta le caen encima alineadas.
+     No se enfoca ni se clickea: se juega con el teclado. */
+  .game-canvas {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: #000;
+    outline: none;
+    pointer-events: none;
+  }
+
   .game-arena {
     position: absolute; inset: 0;
     display: flex; align-items: center; justify-content: center;
