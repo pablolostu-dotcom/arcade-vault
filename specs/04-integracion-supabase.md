@@ -1,6 +1,6 @@
 # SPEC 04 — Integración de Supabase: el cableado, sin producto todavía
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 03
 > **Date:** 2026-09-02
 > **Objective:** Dejar Supabase conectado al proyecto — clientes de browser y de servidor, refresco de sesión en `proxy.ts`, tipos generados y migraciones versionadas — sin crear ninguna tabla ni cambiar ninguna pantalla existente.
@@ -130,15 +130,15 @@ Es la clave **publicable** moderna (`sb_publishable_…`), no la `anon` key JWT 
 
 ## Criterios de aceptación
 
-- [ ] `npm run build` termina sin errores ni errores de tipos.
-- [ ] `npx eslint app lib components` no reporta errores.
+- [X] `npm run build` termina sin errores ni errores de tipos.
+- [X] `npx eslint app lib components` no reporta errores.
 - [ ] `npx tsc --noEmit` pasa con los tres clientes tipados con `Database`.
-- [ ] Las ocho rutas existentes (`/`, `/juegos`, `/juegos/caida`, `/jugar/caida`, `/salon`, `/acceso`, `/acerca-de`, `/estilos`) responden 200 y se ven idénticas a antes del spec.
+- [X] Las ocho rutas existentes (`/`, `/juegos`, `/juegos/caida`, `/jugar/caida`, `/salon`, `/acceso`, `/acerca-de`, `/estilos`) responden 200 y se ven idénticas a antes del spec.
 - [ ] `app/globals.css` no cambió.
 - [ ] `lib/session.tsx` no cambió: el alias sigue en `av_user` y los puntajes en `av_scores`.
-- [ ] El archivo de proxy se llama `proxy.ts` y está en la raíz. **No existe** ningún `middleware.ts` en el repo.
-- [ ] `npm run dev` no emite avisos de deprecación relacionados con el proxy.
-- [ ] En `lib/supabase/proxy.ts` no hay **ninguna** sentencia entre `createServerClient(...)` y `await supabase.auth.getClaims()`.
+- [X] El archivo de proxy se llama `proxy.ts` y está en la raíz. **No existe** ningún `middleware.ts` en el repo.
+- [X] `npm run dev` no emite avisos de deprecación relacionados con el proxy.
+- [X] En `lib/supabase/proxy.ts` no hay **ninguna** sentencia entre `createServerClient(...)` y `await supabase.auth.getClaims()`.
 - [ ] Ningún cliente de Supabase se guarda en una variable de módulo: los tres se crean por llamada.
 - [ ] `/supabase-check` muestra la sonda de servidor en `OK` contra el proyecto real.
 - [ ] `/supabase-check` muestra la sonda de browser en `OK` contra el proyecto real.
@@ -149,8 +149,8 @@ Es la clave **publicable** moderna (`sb_publishable_…`), no la `anon` key JWT 
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` no aparece en ningún archivo del repo.
 - [ ] `.env.example` está versionado con las dos variables nuevas y `.env.local` no aparece en `git status`.
 - [ ] Buscar `RESEND_API_KEY` en `.next/static/` sigue sin devolver resultados (el proxy nuevo no arrastró nada del servidor al bundle).
-- [ ] `/supabase-check` no aparece en el nav ni en el footer.
-- [ ] La consola del navegador no muestra errores ni warnings de hidratación en ninguna ruta.
+- [X] `/supabase-check` no aparece en el nav ni en el footer.
+- [X] La consola del navegador no muestra errores ni warnings de hidratación en ninguna ruta.
 
 ## Decisiones
 
