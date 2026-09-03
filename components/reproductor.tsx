@@ -23,7 +23,11 @@ import type { GameSnapshot } from "@/lib/games/asteroides/engine";
 import { hasEngine } from "@/lib/games/registry";
 import { useSession } from "@/lib/session";
 
-export function Reproductor({ game }: { game: Game }) {
+// El reproductor solo necesita saber a qué juego pertenece la partida y cómo
+// se llama: pedir el juego entero lo ataría a campos que no usa.
+type PlayableGame = Pick<Game, "id" | "title">;
+
+export function Reproductor({ game }: { game: PlayableGame }) {
   const { user, saveScore } = useSession();
   const withEngine = hasEngine(game.id);
   const canvasRef = useRef<GameCanvasHandle>(null);

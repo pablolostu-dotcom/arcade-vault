@@ -680,6 +680,27 @@
   .lb-row.top2 .rk, .lb-row.top2 .sc { color: var(--silver); text-shadow: 0 0 6px rgba(199,208,224,0.5); }
   .lb-row.top3 .rk, .lb-row.top3 .sc { color: var(--bronze); text-shadow: 0 0 6px rgba(217,122,58,0.5); }
 
+  /* Estado vacío del ranking: la tabla existe, pero nadie la estrenó.
+     Va en CYAN y no en el magenta de "NO HAY RESULTADOS" de la biblioteca a
+     propósito: aquello es un callejón sin salida —tu búsqueda no encontró
+     nada— y esto es una invitación, el puesto está libre. Mismo cuerpo y
+     mismo tracking que el h3 del panel para que pertenezca a la caja. */
+  .lb-empty { padding: 32px 20px; text-align: center; }
+  .lb-empty .t {
+    font-family: var(--pixel);
+    font-size: 11px;
+    line-height: 1.8;
+    letter-spacing: 0.14em;
+    color: var(--cyan);
+    text-shadow: 0 0 8px rgba(0,245,255,0.45);
+  }
+  .lb-empty .d {
+    margin-top: 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-dim);
+  }
+
   /* ===== player ===== */
   .av-player {
     max-width: 1100px;

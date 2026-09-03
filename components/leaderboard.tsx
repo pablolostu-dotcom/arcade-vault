@@ -14,6 +14,15 @@ export function Leaderboard({ rows }: { rows: ScoreRow[] }) {
   return (
     <div className="leaderboard">
       <h3>MEJORES PUNTUACIONES</h3>
+      {/* Sin puntajes se muestra la invitación, no una lista de cero filas: un
+          panel con encabezado y nada debajo parece un error de carga. El texto
+          nombra el puesto con el mismo formato que la columna .rk (#01). */}
+      {rows.length === 0 && (
+        <div className="lb-empty">
+          <div className="t">AÚN NADIE MARCÓ UN PUNTAJE</div>
+          <div className="d">Jugá una partida y quedate con el puesto #01.</div>
+        </div>
+      )}
       {rows.map((r, i) => (
         <div key={r.name} className={rowClass(i)}>
           <div className="rk">#{String(r.rank).padStart(2, "0")}</div>
