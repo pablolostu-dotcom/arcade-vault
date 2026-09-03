@@ -24,6 +24,35 @@ export type ScoreRow = {
   date: string;
 };
 
+/**
+ * Lo que las pantallas consumen: el juego con sus números reales, derivados de
+ * la tabla `scores` a través de la vista `game_stats`.
+ *
+ * El `Omit` es temporal: `Game` todavía carga los `best` y `plays` mock del
+ * array `GAMES`, y el paso de poda del SPEC 06 los saca del tipo. Cuando eso
+ * pase, esto se simplifica a `Game & { best: number; plays: number }`.
+ */
+export type GameWithStats = Omit<Game, "best" | "plays"> & {
+  best: number;
+  plays: number;
+};
+
+// Las filas del ranking las formatea el SERVIDOR (el top-10 del detalle, las
+// tablas del salón) y la fila "TU MEJOR MARCA" la formatea el BROWSER. Sin una
+// zona horaria fija, la misma fecha se vería distinta en la misma tabla según
+// dónde se haya renderizado, así que UTC va explícito y no se negocia.
+const SCORE_DATE_FORMAT = new Intl.DateTimeFormat("es-ES", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+/** El `created_at` de Postgres tal como se ve en un ranking: "04/09/2026". */
+export function formatScoreDate(iso: string): string {
+  return SCORE_DATE_FORMAT.format(new Date(iso));
+}
+
 export const GAMES: Game[] = [
   {
     id: "bloque-buster",
