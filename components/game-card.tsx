@@ -9,14 +9,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, type MouseEvent } from "react";
 
-import type { Game } from "@/lib/data";
+import type { Game, GameWithStats } from "@/lib/data";
 
 /** El prototipo solo tiene variante magenta y yellow; cyan y green usan el btn base. */
 function btnClass(color: Game["color"]): string {
   return "btn " + (color === "magenta" ? "magenta" : color === "yellow" ? "yellow" : "");
 }
 
-export function GameCard({ game }: { game: Game }) {
+export function GameCard({ game }: { game: GameWithStats }) {
   const tiltRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const href = `/juegos/${game.id}`;

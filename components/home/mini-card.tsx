@@ -8,7 +8,11 @@ import Link from "next/link";
 
 import type { Game } from "@/lib/data";
 
-export function MiniCard({ game }: { game: Game }) {
+// La rail del home solo pinta portada, título y categoría: pedir el juego
+// entero ataría esta tarjeta a campos que no usa.
+type MiniGame = Pick<Game, "id" | "title" | "cat" | "cover">;
+
+export function MiniCard({ game }: { game: MiniGame }) {
   return (
     <Link className="mini-card" href={`/juegos/${game.id}`}>
       <div className="mini-cover"><div className={"cover-bg " + game.cover}></div></div>

@@ -11,7 +11,8 @@ import { FeatureIcon, type FeatureIconKind } from "@/components/home/feature-ico
 import { FloatingSilhouettes } from "@/components/home/floating-silhouettes";
 import { MiniCard } from "@/components/home/mini-card";
 import { Reveal } from "@/components/home/reveal";
-import { GAMES, LIVE_SCORES, TOP_TODAY, type Accent } from "@/lib/data";
+import { getGames } from "@/lib/catalog";
+import { LIVE_SCORES, TOP_TODAY, type Accent } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "Arcade Vault · Portal Retro",
@@ -26,14 +27,21 @@ const FEATURES: { i: FeatureIconKind; t: string; d: string; c: Accent }[] = [
   { i: "ROCKET",  t: "SIEMPRE CRECIENDO",d: "Agregamos nuevos juegos constantemente. Vuelve seguido, siempre habrá algo nuevo que jugar.", c: "green" },
 ];
 
-// Números de marketing del prototipo: el stat dice 12+ aunque GAMES tenga 8.
+// Números de marketing del prototipo: el stat dice 12+ aunque el catálogo
+// tenga 9. Se queda como está, fuera del alcance del SPEC 06.
 const STATS: { n: string; u: string; s: string }[] = [
   { n: "12+", u: "JUEGOS", s: "Y CONTANDO" },
   { n: "MILES", u: "DE PARTIDAS", s: "JUGADAS CADA DÍA" },
   { n: "GLOBAL", u: "RANKING", s: "COMPITE CON EL MUNDO" },
 ];
 
-export default function HomePage() {
+// La rail de vista previa sale del catálogo real, así que la página no se
+// prerenderiza: un juego nuevo tiene que aparecer sin un deploy.
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const games = await getGames();
+
   return (
     <div className="home fade-in">
       {/* HERO */}
@@ -87,7 +95,7 @@ export default function HomePage() {
           <div className="section-rule"></div>
         </div>
         <div className="mini-rail">
-          {GAMES.slice(0, 6).map(g => (
+          {games.slice(0, 6).map(g => (
             <MiniCard key={g.id} game={g} />
           ))}
         </div>
