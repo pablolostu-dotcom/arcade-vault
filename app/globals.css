@@ -1029,6 +1029,15 @@
   .podium-slot .score { font-family: var(--pixel); font-size: 16px; color: var(--cyan); margin-top: 8px; text-shadow: 0 0 8px rgba(0,245,255,0.5); }
   .podium-slot .date { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); margin-top: 6px; letter-spacing: 0.12em; }
 
+  /* Slot de podio sin dueño. Mantiene la geometría —un salón con dos puntajes
+     descolocaría el podio entero si el slot desapareciera— pero pierde el
+     color de la medalla: un marco plateado brillante sin nombre anunciaría un
+     subcampeón que no existe. */
+  .podium-slot.empty { border-color: var(--line-2); box-shadow: none; }
+  .podium-slot.empty .rank-num { color: var(--ink-faint); text-shadow: none; }
+  .podium-slot.empty .name { color: var(--ink-faint); }
+  .podium-slot.empty .score { color: var(--ink-faint); text-shadow: none; letter-spacing: 0.24em; }
+
   .hall-table {
     border: 1px solid var(--line);
     background: var(--bg-2);
@@ -1061,6 +1070,37 @@
     padding: 8px 18px; font-family: var(--pixel); font-size: 9px;
     color: var(--yellow); letter-spacing: 0.16em; background: rgba(245,255,0,0.04);
     border-bottom: 1px solid var(--line-2);
+  }
+
+  /* Salón vacío: no hay podio ni tabla que mostrar, así que la sección entera
+     se reemplaza por la invitación. Mismo idioma que el .lb-empty del detalle
+     —pixel en cyan sobre una línea mono— pero acá se gana un botón: el Salón
+     no tiene ningún otro camino hacia el juego. */
+  .hall-empty {
+    border: 1px solid var(--line);
+    background: var(--bg-2);
+    padding: 56px 24px;
+    text-align: center;
+  }
+  .hall-empty .t {
+    font-family: var(--pixel);
+    font-size: 13px;
+    line-height: 1.9;
+    letter-spacing: 0.12em;
+    color: var(--cyan);
+    text-shadow: 0 0 10px rgba(0,245,255,0.45);
+    overflow-wrap: break-word;
+  }
+  .hall-empty .d {
+    margin-top: 16px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ink-dim);
+  }
+  .hall-empty .a { margin-top: 26px; }
+  @media (max-width: 720px) {
+    .hall-empty { padding: 40px 18px; }
+    .hall-empty .t { font-size: 11px; }
   }
 
   @media (max-width: 720px) {

@@ -2,43 +2,67 @@
 
 // ===== components/salon.tsx =====
 // Portado de references/templates/salon.jsx (HallOfFame), sin el encabezado ni
-// el botón de vuelta: esos los renderiza la página en el servidor. Es client
-// por dos motivos: la tab elegida es estado local y la fila del usuario depende
-// de la sesión, que se hidrata después del primer render.
+// el botón de vuelta: esos los renderiza la página en el servidor.
+//
+// Es client porque la tab elegida es estado local. Los nueve rankings llegan
+// YA RESUELTOS por props —una sola consulta del servidor, ver
+// getAllLeaderboards()— así que cambiar de tab no vuelve a pegarle a nadie.
 
-import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useState } from "react";
 
-import { GAMES, seededScores } from "@/lib/data";
-import { useSession } from "@/lib/session";
+import type { GameWithStats, ScoreRow } from "@/lib/data";
 
 /** Las tres primeras filas llevan el resalte de podio del prototipo. */
 function rowClass(index: number): string {
   return "tr" + (index === 0 ? " top1" : index === 1 ? " top2" : index === 2 ? " top3" : "");
 }
 
-export function Salon() {
-  const { user } = useSession();
-  const [tab, setTab] = useState(GAMES[0].id);
+/** Slot de podio que nadie reclamó todavía. Sin fecha: no hay nada que datar. */
+function EmptySlot({ position }: { position: string }) {
+  return (
+    <div className="podium-slot empty">
+      <div className="rank-num">{position}</div>
+      <div className="name">LIBRE</div>
+      <div className="score">- - -</div>
+    </div>
+  );
+}
 
-  // Misma semilla que el prototipo: el ranking de cada tab coincide juego por
-  // juego. Son 12 filas acá, contra las 10 del detalle.
-  const rows = useMemo(() => seededScores(tab.length * 23 + 7, 12), [tab]);
-  // La tab siempre sale de GAMES, así que el fallback nunca se usa: está para
-  // no arrastrar un `undefined` desde find().
-  const game = GAMES.find((g) => g.id === tab) ?? GAMES[0];
+export function Salon({
+  games,
+  leaderboards,
+}: {
+  games: GameWithStats[];
+  leaderboards: Record<string, ScoreRow[]>;
+}) {
+  const [tab, setTab] = useState(games[0]?.id ?? "");
 
-  // Marca del usuario: valores fabricados como en el prototipo. No se leen de
-  // av_scores — alimentar los rankings con lo guardado queda fuera de este spec.
-  const youRank = 8 + (tab.length % 4);
-  const youScore = rows[5] ? rows[5].score - 2400 : 9999;
+  // El catálogo vive en Postgres: si la base no contesta llega vacío. Antes era
+  // un array literal y GAMES[0] no podía fallar; ahora sí, así que se dice en
+  // vez de lanzar.
+  if (games.length === 0) {
+    return (
+      <div className="hall-empty">
+        <div className="t">EL VAULT NO RESPONDE</div>
+        <div className="d">No se pudo leer el catálogo. Probá recargar en un momento.</div>
+      </div>
+    );
+  }
+
+  // El fallback no debería usarse —la tab siempre sale de `games`— pero evita
+  // arrastrar un `undefined` desde find().
+  const game = games.find((g) => g.id === tab) ?? games[0];
+  const rows = leaderboards[game.id] ?? [];
+  const [first, second, third] = rows;
 
   return (
     <>
       <div className="hall-tabs">
-        {GAMES.map((g) => (
+        {games.map((g) => (
           <button
             key={g.id}
-            className={"chip" + (tab === g.id ? " active" : "")}
+            className={"chip" + (game.id === g.id ? " active" : "")}
             onClick={() => setTab(g.id)}
           >
             {g.title}
@@ -46,80 +70,83 @@ export function Salon() {
         ))}
       </div>
 
-      <div className="podium">
-        <div className="podium-slot silver">
-          <div className="rank-num">02</div>
-          <div className="name">{rows[1].name}</div>
-          <div className="score">{rows[1].score.toLocaleString("es-ES")}</div>
-          <div className="date">{rows[1].date}</div>
-        </div>
-        <div className="podium-slot gold">
-          <div
-            className="pixel"
-            style={{ fontSize: 9, color: "var(--gold)", letterSpacing: "0.18em" }}
-          >
-            CAMPEÓN
+      {rows.length === 0 ? (
+        // Sin un solo puntaje no hay podio ni tabla: la sección entera es la
+        // invitación. Rellenar el podio con tres slots vacíos sería un mueble
+        // sin función.
+        <div className="hall-empty">
+          <div className="t">AÚN NADIE MARCÓ UN PUNTAJE EN {game.title}</div>
+          <div className="d">El puesto #01 está libre.</div>
+          <div className="a">
+            <Link className="btn lg" href={`/jugar/${game.id}`}>
+              ▶ JUGAR {game.title}
+            </Link>
           </div>
-          <div className="rank-num" style={{ fontSize: 36, marginTop: 4 }}>
-            01
-          </div>
-          <div className="name">{rows[0].name}</div>
-          <div className="score" style={{ fontSize: 20 }}>
-            {rows[0].score.toLocaleString("es-ES")}
-          </div>
-          <div className="date">{rows[0].date}</div>
         </div>
-        <div className="podium-slot bronze">
-          <div className="rank-num">03</div>
-          <div className="name">{rows[2].name}</div>
-          <div className="score">{rows[2].score.toLocaleString("es-ES")}</div>
-          <div className="date">{rows[2].date}</div>
-        </div>
-      </div>
+      ) : (
+        <>
+          <div className="podium">
+            {/* Con una sola marca el podio conserva sus tres columnas y los dos
+                slots sin dueño se muestran libres. */}
+            {second ? (
+              <div className="podium-slot silver">
+                <div className="rank-num">02</div>
+                <div className="name">{second.name}</div>
+                <div className="score">{second.score.toLocaleString("es-ES")}</div>
+                <div className="date">{second.date}</div>
+              </div>
+            ) : (
+              <EmptySlot position="02" />
+            )}
 
-      <div className="hall-table">
-        <div className="th">
-          <div>RANGO</div>
-          <div>JUGADOR</div>
-          <div>PUNTUACIÓN</div>
-          <div>FECHA</div>
-        </div>
-        {rows.map((r, i) => (
-          <div
-            key={r.name + i}
-            className={rowClass(i)}
-            style={{ animationDelay: `${i * 50}ms` }}
-          >
-            <div className="rk">#{String(r.rank).padStart(2, "0")}</div>
-            <div className="pl">{r.name}</div>
-            <div className="sc">{r.score.toLocaleString("es-ES")}</div>
-            <div className="dt">{r.date}</div>
-          </div>
-        ))}
-        {user && (
-          <>
-            <div className="tr you-label">▸ TU MEJOR MARCA EN {game.title}</div>
-            <div
-              className="tr you"
-              style={{ animationDelay: `${rows.length * 50 + 50}ms` }}
-            >
-              <div className="rk" style={{ color: "var(--yellow)" }}>
-                #{String(youRank).padStart(2, "0")}
-              </div>
-              <div className="pl" style={{ color: "var(--yellow)" }}>
-                {user.name}
-              </div>
+            {/* first existe siempre en esta rama: rows.length > 0. */}
+            <div className="podium-slot gold">
               <div
-                className="sc"
-                style={{ color: "var(--yellow)", textShadow: "0 0 6px rgba(245,255,0,0.5)" }}
+                className="pixel"
+                style={{ fontSize: 9, color: "var(--gold)", letterSpacing: "0.18em" }}
               >
-                {youScore.toLocaleString("es-ES")}
+                CAMPEÓN
               </div>
-              <div className="dt">11/05/2026</div>
+              <div className="rank-num" style={{ fontSize: 36, marginTop: 4 }}>
+                01
+              </div>
+              <div className="name">{first.name}</div>
+              <div className="score" style={{ fontSize: 20 }}>
+                {first.score.toLocaleString("es-ES")}
+              </div>
+              <div className="date">{first.date}</div>
             </div>
-          </>
-        )}
-      </div>
+
+            {third ? (
+              <div className="podium-slot bronze">
+                <div className="rank-num">03</div>
+                <div className="name">{third.name}</div>
+                <div className="score">{third.score.toLocaleString("es-ES")}</div>
+                <div className="date">{third.date}</div>
+              </div>
+            ) : (
+              <EmptySlot position="03" />
+            )}
+          </div>
+
+          <div className="hall-table">
+            <div className="th">
+              <div>RANGO</div>
+              <div>JUGADOR</div>
+              <div>PUNTUACIÓN</div>
+              <div>FECHA</div>
+            </div>
+            {rows.map((r, i) => (
+              <div key={r.name} className={rowClass(i)} style={{ animationDelay: `${i * 50}ms` }}>
+                <div className="rk">#{String(r.rank).padStart(2, "0")}</div>
+                <div className="pl">{r.name}</div>
+                <div className="sc">{r.score.toLocaleString("es-ES")}</div>
+                <div className="dt">{r.date}</div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </>
   );
 }
