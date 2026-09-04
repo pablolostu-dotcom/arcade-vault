@@ -15,20 +15,29 @@
 // pagan su peso.
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 
+import { submitScore, type SubmitScoreError } from "@/app/jugar/actions";
 import { GameCanvas, type GameCanvasHandle } from "@/components/game-canvas";
 import type { Game } from "@/lib/data";
 import type { GameSnapshot } from "@/lib/games/asteroides/engine";
 import { hasEngine } from "@/lib/games/registry";
 import { useSession } from "@/lib/session";
 
+// Mismo registro que el formulario de contacto: mayúsculas, directo y sin
+// detalles del proveedor —esos quedan en el console.error del servidor—.
+const ERROR_TEXT: Record<SubmitScoreError, string> = {
+  INVALID: "REVISA LAS INICIALES: HACEN FALTA ENTRE 1 Y 10 CARACTERES.",
+  RATE_LIMIT: "DEMASIADOS GUARDADOS. ESPERA UNOS MINUTOS Y REINTENTA.",
+  DB: "NO SE PUDO GUARDAR LA PUNTUACIÓN. REINTENTA.",
+};
+
 // El reproductor solo necesita saber a qué juego pertenece la partida y cómo
 // se llama: pedir el juego entero lo ataría a campos que no usa.
 type PlayableGame = Pick<Game, "id" | "title">;
 
 export function Reproductor({ game }: { game: PlayableGame }) {
-  const { user, saveScore } = useSession();
+  const { user } = useSession();
   const withEngine = hasEngine(game.id);
   const canvasRef = useRef<GameCanvasHandle>(null);
 
@@ -41,6 +50,8 @@ export function Reproductor({ game }: { game: PlayableGame }) {
   const [paused, setPaused] = useState(false);
   const [over, setOver] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<SubmitScoreError | null>(null);
+  const [isSaving, startSaving] = useTransition();
   // Iniciales del modal. Arranca en null en lugar del nombre del usuario porque
   // la sesión se hidrata después del primer render: mientras nadie escriba, el
   // input sigue a displayName; en cuanto se escribe, manda lo tipeado.
@@ -94,6 +105,18 @@ export function Reproductor({ game }: { game: PlayableGame }) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [withEngine, togglePause]);
 
+  // El puntaje se guarda en Postgres, no en localStorage. Si falla, el modal
+  // sigue abierto con el puntaje y las iniciales intactas: reescribirlos sería
+  // el castigo por un fallo que no es del jugador.
+  const handleSave = () => {
+    setSaveError(null);
+    startSaving(async () => {
+      const res = await submitScore({ gameId: game.id, score, name: nameToSave });
+      if (res.ok) setSaved(true);
+      else setSaveError(res.error);
+    });
+  };
+
   // Con motor, end() dispara onGameOver y ese callback abre el modal: así el
   // botón FIN y perder la última vida terminan por el mismo camino.
   const endGame = () => {
@@ -110,6 +133,7 @@ export function Reproductor({ game }: { game: PlayableGame }) {
     setPaused(false);
     setOver(false);
     setSaved(false);
+    setSaveError(null);
     setInitials(null);
   };
 
@@ -220,23 +244,29 @@ export function Reproductor({ game }: { game: PlayableGame }) {
             <div className="final-label">PUNTUACIÓN FINAL</div>
             <div className="final">{score.toLocaleString("es-ES")}</div>
             {!saved ? (
-              <div className="input-row">
-                <input
-                  value={nameToSave}
-                  onChange={(e) => setInitials(e.target.value.toUpperCase().slice(0, 10))}
-                  placeholder="TUS INICIALES"
-                  aria-label="Tus iniciales"
-                />
-                <button
-                  className="btn yellow"
-                  onClick={() => {
-                    saveScore({ game: game.id, score, name: nameToSave });
-                    setSaved(true);
-                  }}
-                >
-                  GUARDAR PUNTUACIÓN
-                </button>
-              </div>
+              <>
+                <div className="input-row">
+                  <input
+                    value={nameToSave}
+                    onChange={(e) => setInitials(e.target.value.toUpperCase().slice(0, 10))}
+                    placeholder="TUS INICIALES"
+                    aria-label="Tus iniciales"
+                    disabled={isSaving}
+                  />
+                  <button className="btn yellow" onClick={handleSave} disabled={isSaving}>
+                    {isSaving ? "GUARDANDO…" : "GUARDAR PUNTUACIÓN"}
+                  </button>
+                </div>
+                {saveError && (
+                  <div
+                    className="pixel neon-magenta"
+                    role="alert"
+                    style={{ marginTop: 14, fontSize: 9, lineHeight: 1.7, letterSpacing: "0.1em" }}
+                  >
+                    {ERROR_TEXT[saveError]}
+                  </div>
+                )}
+              </>
             ) : (
               <div className="toast-saved">▸ PUNTUACIÓN GUARDADA_</div>
             )}
