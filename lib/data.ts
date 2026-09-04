@@ -1,6 +1,12 @@
-// ===== lib/data.ts — datos mock compartidos =====
-// Portado de references/templates/data.jsx. Mismos valores, mismas semillas:
-// los puntajes generados acá coinciden con los del prototipo.
+// ===== lib/data.ts — tipos compartidos y lo que sigue siendo mock =====
+// Portado de references/templates/data.jsx. El catálogo y los rankings ya NO
+// viven acá: se leen de Postgres con lib/catalog.ts y lib/scores.ts. Lo que
+// queda es de tres clases:
+//
+//   - los tipos que las pantallas comparten (Game, ScoreRow, …),
+//   - CATS, que es la lista de chips del filtro y se valida con un CHECK,
+//   - LIVE_SCORES y TOP_TODAY, el bloque de actividad del home, que sigue
+//     siendo mock a propósito (fuera del alcance del SPEC 06).
 
 export type Category = "ARCADE" | "PUZZLE" | "SHOOTER" | "VERSUS";
 export type Accent = "cyan" | "magenta" | "yellow" | "green";
@@ -13,8 +19,6 @@ export type Game = {
   cat: Category;
   cover: string; // clase CSS: "cover-bricks", "cover-tetro", …
   color: Accent;
-  best: number;
-  plays: string;
 };
 
 export type ScoreRow = {
@@ -26,16 +30,10 @@ export type ScoreRow = {
 
 /**
  * Lo que las pantallas consumen: el juego con sus números reales, derivados de
- * la tabla `scores` a través de la vista `game_stats`.
- *
- * El `Omit` es temporal: `Game` todavía carga los `best` y `plays` mock del
- * array `GAMES`, y el paso de poda del SPEC 06 los saca del tipo. Cuando eso
- * pase, esto se simplifica a `Game & { best: number; plays: number }`.
+ * la tabla `scores` a través de la vista `game_stats`. `plays` cuenta puntajes
+ * guardados, no partidas empezadas: es lo único que la tabla sabe.
  */
-export type GameWithStats = Omit<Game, "best" | "plays"> & {
-  best: number;
-  plays: number;
-};
+export type GameWithStats = Game & { best: number; plays: number };
 
 // Las filas del ranking las formatea el SERVIDOR (el top-10 del detalle, las
 // tablas del salón) y la fila "TU MEJOR MARCA" la formatea el BROWSER. Sin una
@@ -53,144 +51,15 @@ export function formatScoreDate(iso: string): string {
   return SCORE_DATE_FORMAT.format(new Date(iso));
 }
 
-export const GAMES: Game[] = [
-  {
-    id: "bloque-buster",
-    title: "BLOQUE BUSTER",
-    short: "Rebota la pelota y destruye muros de neón.",
-    long: "Pilota una nave-paleta y rebota un núcleo de plasma para pulverizar muros de bloques cromáticos. Cada nivel reorganiza la grilla en patrones imposibles. ¿Hasta dónde llegará tu racha?",
-    cat: "ARCADE",
-    cover: "cover-bricks",
-    color: "cyan",
-    best: 28450,
-    plays: "12.4K",
-  },
-  {
-    id: "caida",
-    title: "CAÍDA",
-    short: "Encaja las piezas antes de que el techo te aplaste.",
-    long: "Piezas geométricas descienden desde la oscuridad. Rótalas, encástralas y limpia líneas para sobrevivir. La velocidad aumenta sin piedad cada 10 líneas.",
-    cat: "PUZZLE",
-    cover: "cover-tetro",
-    color: "magenta",
-    best: 184220,
-    plays: "31.8K",
-  },
-  {
-    id: "serpentina",
-    title: "SERPENTINA",
-    short: "Crece sin morder tu propia cola.",
-    long: "Una serpiente de luz recorre la grilla buscando núcleos magenta. Cada bocado la alarga y la hace más veloz. Un movimiento en falso y se devora a sí misma.",
-    cat: "ARCADE",
-    cover: "cover-snake",
-    color: "green",
-    best: 7820,
-    plays: "9.1K",
-  },
-  {
-    id: "gloton",
-    title: "GLOTÓN",
-    short: "Devora puntos y escapa de los fantasmas.",
-    long: "Un círculo glotón patrulla un laberinto coleccionando puntos luminosos. Cuatro espectros lo persiguen, pero cada cierto tiempo aparece una píldora que invierte los papeles.",
-    cat: "ARCADE",
-    cover: "cover-glot",
-    color: "yellow",
-    best: 96400,
-    plays: "27.2K",
-  },
-  {
-    id: "invasores",
-    title: "INVASORES",
-    short: "Defiende el planeta de filas alienígenas.",
-    long: "Olas de pixeles hostiles descienden formación tras formación. Mueve tu cañón en horizontal y abre fuego con precisión, antes de que toquen la superficie.",
-    cat: "SHOOTER",
-    cover: "cover-invaders",
-    color: "green",
-    best: 54190,
-    plays: "18.0K",
-  },
-  {
-    id: "rocas",
-    title: "ROCAS",
-    short: "Pulveriza asteroides en gravedad cero.",
-    long: "Tu nave triangular flota en vacío absoluto. Dispara y rota para dividir rocas en fragmentos cada vez más pequeños. Cuidado con los OVNIs en el horizonte.",
-    cat: "SHOOTER",
-    cover: "cover-rocas",
-    color: "yellow",
-    best: 41200,
-    plays: "15.6K",
-  },
-  {
-    id: "ranaria",
-    title: "RANARIA",
-    short: "Cruza la autopista de pixeles.",
-    long: "Salta entre carriles de coches a toda velocidad y troncos a la deriva en el río. Llega a los nenúfares antes de que se acabe el tiempo.",
-    cat: "ARCADE",
-    cover: "cover-rana",
-    color: "green",
-    best: 18900,
-    plays: "6.4K",
-  },
-  {
-    id: "duelo-pixel",
-    title: "DUELO PIXEL",
-    short: "Dos paletas. Una pelota. Reflejos máximos.",
-    long: "El duelo más puro: dos paletas verticales se enfrentan por rebotar una pelota luminosa. Modo solitario contra la CPU o partida local a dos jugadores.",
-    cat: "VERSUS",
-    cover: "cover-duelo",
-    color: "cyan",
-    best: 24,
-    plays: "4.2K",
-  },
-  {
-    id: "asteroides",
-    title: "ASTEROIDES",
-    short: "Parte las rocas antes de que te partan a vos.",
-    long: "Una nave de vectores a la deriva en el vacío: rota, propulsa y dispara mientras la inercia te sigue arrastrando. Cada roca grande se parte en dos medianas, y cada mediana en dos pequeñas. El nivel no termina hasta que no queda ni un fragmento en pantalla.",
-    cat: "SHOOTER",
-    cover: "cover-asteroides",
-    color: "cyan",
-    best: 33780,
-    plays: "2.1K",
-  },
-];
-
+// Los chips del filtro de la biblioteca. "TODOS" no es una categoría: es el
+// estado sin filtrar. Las otras cuatro son las que el CHECK de games.cat
+// admite, así que una tabla `categories` sería un join para decir lo mismo.
 export const CATS: readonly string[] = ["TODOS", "ARCADE", "PUZZLE", "SHOOTER", "VERSUS"];
-
-export const PLAYERS: readonly string[] = [
-  "PX_KAI", "NEONFOX", "Z3R0COOL", "M00NRYU", "VAULT_07", "GLITCHA",
-  "ATARI_KID", "CYBER_LU", "MAGENTA88", "SCANLINE", "BIT_LORD", "ARKADYA",
-  "DROID_X", "RGB_QUEEN", "PIXEL_DAD", "RETROVIRA", "VECTORX", "JOY_STK",
-];
-
-/**
- * LCG determinístico portado tal cual del prototipo: la misma semilla produce
- * exactamente la misma tabla. Semillas en uso:
- *   - Detalle: seededScores(id.length * 17 + 3, 10)
- *   - Salón:   seededScores(tabId.length * 23 + 7, 12)
- */
-export function seededScores(seed: number, count = 12): ScoreRow[] {
-  let s = seed;
-  const rand = () => (s = (s * 9301 + 49297) % 233280) / 233280;
-  const used = new Set<string>();
-  const rows: ScoreRow[] = [];
-  for (let i = 0; i < count; i++) {
-    let name: string;
-    do { name = PLAYERS[Math.floor(rand() * PLAYERS.length)]; } while (used.has(name) && used.size < PLAYERS.length);
-    used.add(name);
-    const base = Math.floor(50000 + rand() * 250000);
-    const score = base - i * Math.floor(2000 + rand() * 4000);
-    const day = String(1 + Math.floor(rand() * 28)).padStart(2, "0");
-    const mon = String(1 + Math.floor(rand() * 12)).padStart(2, "0");
-    rows.push({ rank: i + 1, name, score: Math.max(score, 1000), date: `${day}/${mon}/2026` });
-  }
-  return rows.sort((a, b) => b.score - a.score).map((r, i) => ({ ...r, rank: i + 1 }));
-}
 
 /** Fila del ticker "ÚLTIMAS PUNTUACIONES" del home. */
 export type LiveScore = {
   player: string;   // "NEONFOX"
-  game: string;     // "Caída" — texto libre, no un id de GAMES
+  game: string;     // "Caída" — texto libre, no un id del catálogo
   score: number;
   when: string;     // "hace 2 min" — literal, no se calcula
   color: Accent;    // clase neon-* de la columna del jugador
@@ -204,9 +73,11 @@ export type TopPlayer = {
 };
 
 // Las dos tablas del bloque de actividad del home, copiadas literal de los
-// arrays inline de references/templates/home-about/home.jsx. Son mock: no se
-// cruzan con GAMES (los títulos van en capitalización de título, no en
-// mayúsculas) ni se derivan de av_scores.
+// arrays inline de references/templates/home-about/home.jsx. Siguen siendo
+// mock: no se cruzan con el catálogo (los títulos van en capitalización de
+// título, no en mayúsculas) ni salen de la tabla `scores`. Un ticker de
+// actividad real tiene que decidir ventana temporal, orden y refresco — es una
+// pantalla, no una consulta, y va en otra spec.
 export const LIVE_SCORES: readonly LiveScore[] = [
   { player: "NEONFOX",  game: "Caída",         score: 184220, when: "hace 2 min",  color: "magenta" },
   { player: "PX_KAI",   game: "Glotón",        score: 96400,  when: "hace 5 min",  color: "yellow" },

@@ -87,7 +87,7 @@ export default async function HomePage() {
         </div>
       </Reveal>
 
-      {/* GAMES PREVIEW */}
+      {/* CATÁLOGO PREVIEW */}
       <Reveal className="home-section">
         <div className="section-head">
           <div className="kicker pixel neon-cyan">{"// 02"}</div>

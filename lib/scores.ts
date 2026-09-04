@@ -1,10 +1,10 @@
 // ===== lib/scores.ts — los rankings, leídos de Postgres =====
 // Solo servidor: usa lib/supabase/server.ts.
 //
-// Reemplaza a seededScores(), el LCG que fabricaba las mismas doce filas para
-// todos los visitantes. Lee la vista `leaderboard_entries`, que ya trae el
-// MEJOR puntaje de cada alias en cada juego —un jugador insistente ocupa un
-// renglón, no diez— con la fecha de ese puntaje.
+// Reemplaza al generador determinístico de lib/data.ts, un LCG que fabricaba
+// las mismas doce filas para todos los visitantes. Lee `leaderboard_entries`,
+// la vista que ya trae el MEJOR puntaje de cada alias en cada juego —un jugador
+// insistente ocupa un renglón, no diez— con la fecha de ese puntaje.
 //
 // El orden es el del índice `scores_ranking_idx`: puntaje descendente y, ante
 // un empate, el más antiguo arriba. Es la convención de arcade y además hace el

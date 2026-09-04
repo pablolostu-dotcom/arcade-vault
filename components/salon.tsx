@@ -39,8 +39,8 @@ export function Salon({
   const [tab, setTab] = useState(games[0]?.id ?? "");
 
   // El catálogo vive en Postgres: si la base no contesta llega vacío. Antes era
-  // un array literal y GAMES[0] no podía fallar; ahora sí, así que se dice en
-  // vez de lanzar.
+  // un array literal y su primer elemento no podía faltar; ahora sí, así que se
+  // dice en vez de lanzar.
   if (games.length === 0) {
     return (
       <div className="hall-empty">

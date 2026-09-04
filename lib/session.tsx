@@ -1,10 +1,18 @@
 "use client";
 
-// ===== lib/session.tsx — sesión falsa y puntajes guardados =====
-// Mismas claves de localStorage que el prototipo (references/templates/app.jsx):
-//   av_user   → { name } | ausente
-//   av_scores → array append-only de { game, score, name, at }
-// Nada en esta spec lee av_scores: se escribe y no se lee, igual que el prototipo.
+// ===== lib/session.tsx — sesión falsa =====
+// Una sola clave de localStorage, la misma del prototipo
+// (references/templates/app.jsx):
+//   av_user → { name } | ausente
+//
+// Los puntajes NO viven acá. Hasta el SPEC 06 se escribían en una segunda
+// clave de localStorage que nadie leía nunca; ahora los guarda la Server Action
+// de app/jugar/actions.ts en la tabla `scores` de Postgres, que es de donde los
+// rankings los leen.
+//
+// El auth sigue siendo falso: cualquiera entra escribiendo un alias, así que un
+// puntaje es la afirmación de un anónimo sobre sí mismo. El spec de auth real
+// convertirá ese alias en una referencia a `profiles`.
 
 import {
   createContext,
@@ -17,22 +25,13 @@ import {
 } from "react";
 
 const USER_KEY = "av_user";
-const SCORES_KEY = "av_scores";
 
 export type User = { name: string };
-
-export type SavedScore = {
-  game: string;
-  score: number;
-  name: string;
-  at: number;
-};
 
 type SessionValue = {
   user: User | null;
   signIn: (name: string) => void;
   signOut: () => void;
-  saveScore: (entry: Omit<SavedScore, "at">) => void;
 };
 
 const SessionContext = createContext<SessionValue | null>(null);
@@ -83,20 +82,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
-  const saveScore = useCallback((entry: Omit<SavedScore, "at">) => {
-    try {
-      const raw = localStorage.getItem(SCORES_KEY);
-      const all = raw ? (JSON.parse(raw) as SavedScore[]) : [];
-      all.push({ ...entry, at: Date.now() });
-      localStorage.setItem(SCORES_KEY, JSON.stringify(all));
-    } catch {
-      // Igual que el prototipo: si falla, se pierde el puntaje sin romper la UI.
-    }
-  }, []);
-
   const value = useMemo<SessionValue>(
-    () => ({ user, signIn, signOut, saveScore }),
-    [user, signIn, signOut, saveScore],
+    () => ({ user, signIn, signOut }),
+    [user, signIn, signOut],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

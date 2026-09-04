@@ -2,9 +2,9 @@
 // Solo servidor: usa lib/supabase/server.ts, que llama a cookies(). Importarlo
 // desde un Client Component no compila.
 //
-// Reemplaza al array GAMES de lib/data.ts. Los números que las tarjetas
-// mostraban inventados —`best` y `plays`— ya no son columnas: salen de la vista
-// `game_stats`, que los deriva de la tabla `scores`.
+// Reemplaza al array de catálogo que vivía en lib/data.ts. Los números que las
+// tarjetas mostraban inventados —`best` y `plays`— ya no son columnas: salen de
+// la vista `game_stats`, que los deriva de la tabla `scores`.
 //
 // Cuando la base no responde, las funciones devuelven vacío en vez de lanzar:
 // el portal muestra su estado vacío y /supabase-check sigue siendo la
