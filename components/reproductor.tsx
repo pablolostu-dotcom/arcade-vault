@@ -45,7 +45,11 @@ export function Reproductor({ game }: { game: PlayableGame }) {
   const [level, setLevel] = useState(1);
   // Antes era la constante 3: el prototipo nunca descuenta vidas. Con motor sí
   // se descuentan, así que pasa a ser estado. Sin motor arranca y se queda en 3.
-  const [lives, setLives] = useState(3);
+  //
+  // `null` significa "este juego no tiene vidas" y esconde el slot ♥: Tetris no
+  // tiene el concepto. Arranca en null con motor y lo llena el primer snapshot,
+  // así el HUD nunca muestra tres corazones prestados antes del primer frame.
+  const [lives, setLives] = useState<number | null>(withEngine ? null : 3);
   // El stat propio de cada juego, ya formateado por el motor. Sin motor no hay.
   const [extra, setExtra] = useState<GameSnapshot["extra"]>(undefined);
   const [paused, setPaused] = useState(false);
@@ -78,9 +82,7 @@ export function Reproductor({ game }: { game: PlayableGame }) {
   // El motor solo emite cuando algún valor cambió: esto no corre por frame.
   const handleSnapshot = useCallback((snapshot: GameSnapshot) => {
     setScore(snapshot.score);
-    // `lives` ya es opcional en el snapshot, pero acá todavía es number: el slot
-    // ♥ se vuelve condicional en el paso 4. Asteroides siempre lo manda.
-    setLives(snapshot.lives ?? 3);
+    setLives(snapshot.lives ?? null);
     setLevel(snapshot.level);
     setExtra(snapshot.extra);
   }, []);
@@ -97,12 +99,15 @@ export function Reproductor({ game }: { game: PlayableGame }) {
     setPaused(!paused);
   }, [over, paused]);
 
-  // Escape hace lo mismo que el botón. Solo con motor: los ocho simulados
-  // tienen que comportarse exactamente igual que antes de esta spec.
+  // Escape y P hacen lo mismo que el botón: el que viene del portal encuentra
+  // su tecla y el que viene del Tetris original, la suya. Solo con motor, los
+  // ocho simulados tienen que comportarse exactamente igual que antes.
+  // La pausa la maneja React y no el motor, así el overlay que se ve es siempre
+  // el mismo y la tecla no alterna dos veces por pulsación.
   useEffect(() => {
     if (!withEngine) return;
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") togglePause();
+      if (e.key === "Escape" || e.code === "KeyP") togglePause();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -128,16 +133,20 @@ export function Reproductor({ game }: { game: PlayableGame }) {
   };
 
   const restart = () => {
-    canvasRef.current?.restart();
+    // Los valores a mano PRIMERO y el motor al final: restart() emite su
+    // snapshot inicial de forma síncrona, así que si se llamara antes, estos
+    // setters lo pisarían y el HUD perdería el slot `extra` hasta el próximo
+    // cambio de puntaje. Sin motor no hay quien los pise y mandan estos.
     setScore(0);
     setLevel(1);
-    setLives(3);
+    setLives(withEngine ? null : 3);
     setExtra(undefined);
     setPaused(false);
     setOver(false);
     setSaved(false);
     setSaveError(null);
     setInitials(null);
+    canvasRef.current?.restart();
   };
 
   return (
@@ -154,10 +163,12 @@ export function Reproductor({ game }: { game: PlayableGame }) {
             <div className="l">Puntuación</div>
             <div className="v">{score.toLocaleString("es-ES")}</div>
           </div>
-          <div className="hud-stat lives">
-            <div className="l">Vidas</div>
-            <div className="v">{"♥ ".repeat(lives).trim() || "—"}</div>
-          </div>
+          {lives !== null && (
+            <div className="hud-stat lives">
+              <div className="l">Vidas</div>
+              <div className="v">{"♥ ".repeat(lives).trim() || "—"}</div>
+            </div>
+          )}
           <div className="hud-stat level">
             <div className="l">Nivel</div>
             <div className="v">{String(level).padStart(2, "0")}</div>
@@ -207,7 +218,10 @@ export function Reproductor({ game }: { game: PlayableGame }) {
           {withEngine && (
             <div className="keyboard-notice">
               <div className="t">{game.title} REQUIERE TECLADO</div>
-              <div className="s">Conecta uno para rotar, propulsar y disparar</div>
+              {/* Genérico a propósito: el aviso lo comparten todos los juegos
+                  con motor y cada uno tiene sus propios controles. El título
+                  ya se adapta solo porque sale de game.title. */}
+              <div className="s">Conecta uno para jugar</div>
             </div>
           )}
           {paused && (
