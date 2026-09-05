@@ -1,6 +1,6 @@
 # SPEC 06 — El catálogo y los puntajes se mudan a Postgres
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 04, SPEC 05
 > **Date:** 2026-09-04
 > **Objective:** Crear las tablas `games` y `scores` en Supabase, mover a Postgres el catálogo de los nueve juegos, y hacer que el Salón de la Fama y el top-10 del Detalle muestren un ranking real por juego —el mejor puntaje de cada alias— escrito por una Server Action desde el reproductor.
@@ -302,7 +302,7 @@ Mismo patrón que `sendContactMessage` del SPEC 03: resultado discriminado, sin 
 | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | El portal queda vacío el día del deploy: nueve tarjetas en `0` y nueve rankings sin filas                         | Es el costo asumido de no sembrar puntajes falsos, y se compensa diseñando el estado vacío. Hay criterios de aceptación explícitos para que ninguna pantalla se rompa con la tabla vacía.                    |
 | El podio del Salón accede a `rows[0]`, `rows[1]` y `rows[2]` sin comprobar y lanza con menos de tres puntajes     | El paso 6 lo trata como parte del trabajo, no como un detalle. Hay dos criterios de aceptación: cero filas y el caso intermedio de una o dos.                                                                |
-| Alguien inserta directamente contra PostgREST y ensucia el ranking                                             | Los CHECK constraints y la FK corren siempre, así que la basura tiene forma válida. Es una consecuencia aceptada de no usar `service_role` sin auth, y está escrita en las decisiones para que no sorprenda. |
+| Alguien inserta directamente contra PostgREST y ensucia el ranking                                                | Los CHECK constraints y la FK corren siempre, así que la basura tiene forma válida. Es una consecuencia aceptada de no usar `service_role` sin auth, y está escrita en las decisiones para que no sorprenda. |
 | Un jugador martilla el guardado y llena su propia tabla                                                           | Rate limit de 10 envíos cada 10 minutos por IP, y el ranking muestra un solo puntaje por alias: repetir no ocupa más renglones.                                                                              |
 | El rate limit no frena nada porque el `Map` vive en la memoria del proceso y serverless levanta instancias nuevas | Limitación heredada y ya documentada por el SPEC 03. Frena el caso real (alguien insistiendo desde una pestaña) y no pretende ser un límite distribuido.                                                     |
 | El Salón dispara nueve consultas, una por tab, y la página tarda                                                  | `getAllLeaderboards()` trae los nueve rankings en una consulta y agrupa en memoria. Las tabs no vuelven a pegarle al servidor.                                                                               |
