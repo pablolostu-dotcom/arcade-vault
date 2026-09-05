@@ -4,21 +4,24 @@
 // Portado de references/templates/biblioteca.jsx (Library), sin el hero:
 // ese lo renderiza la página en el servidor. El filtro es estado local —
 // no se refleja en la URL, según la decisión del spec.
+//
+// El catálogo llega por props desde el servidor: la isla no consulta nada, solo
+// filtra lo que ya tiene.
 
 import { useMemo, useState } from "react";
 
 import { GameCard } from "@/components/game-card";
-import { CATS, GAMES } from "@/lib/data";
+import { CATS, type GameWithStats } from "@/lib/data";
 
-export function Biblioteca() {
+export function Biblioteca({ games }: { games: GameWithStats[] }) {
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("TODOS");
 
   const filtered = useMemo(() => {
-    return GAMES.filter(
+    return games.filter(
       (g) => (cat === "TODOS" || g.cat === cat) && g.title.toLowerCase().includes(q.toLowerCase()),
     );
-  }, [q, cat]);
+  }, [games, q, cat]);
 
   return (
     <>
