@@ -12,31 +12,7 @@
 // acá no existen drawHUD() ni el overlay de GAME OVER, ni el reinicio con
 // Espacio del original.
 
-export type GameStatus = "playing" | "dead" | "gameover";
-
-/** Lo único que el motor le cuenta a React. */
-export type GameSnapshot = {
-  score: number;
-  lives: number;
-  level: number;
-  tripleShot: number; // segundos restantes, 0 si no hay power-up activo
-  status: GameStatus;
-};
-
-export type EngineHandle = {
-  start(): void;
-  pause(): void;
-  resume(): void;
-  restart(): void;
-  end(): void; // el botón FIN: fuerza el game over
-  destroy(): void; // cancela el rAF y quita los listeners
-};
-
-export type EngineOptions = {
-  /** Se llama SOLO cuando algún valor del snapshot cambió, no en cada frame. */
-  onSnapshot(snapshot: GameSnapshot): void;
-  onGameOver(finalScore: number): void;
-};
+import type { EngineHandle, EngineOptions, GameSnapshot, GameStatus } from "../types";
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 // Portadas con sus valores originales. Este motor no rebalancea nada.
@@ -488,12 +464,19 @@ export function createAsteroidesEngine(
 
   /** Emite solo si cambió algo: si no, React re-renderiza 60 veces por segundo. */
   function emitSnapshot() {
+    // El formateo del contador vive acá y no en el HUD: el reproductor no tiene
+    // por qué saber que `3x · 4.2s` sale de un número de segundos. Redondeado a
+    // un decimal antes de volverse string, así la comparación de abajo es exacta.
+    const remaining = Math.max(0, Math.round(ship.tripleShot * 10) / 10);
     const snapshot: GameSnapshot = {
       score,
       lives,
       level,
-      tripleShot: Math.max(0, Math.round(ship.tripleShot * 10) / 10),
       status: state,
+      extra:
+        remaining > 0
+          ? { label: "Triple disparo", value: `3x · ${remaining.toFixed(1)}s` }
+          : undefined,
     };
     const prev = lastSnapshot;
     if (
@@ -501,7 +484,7 @@ export function createAsteroidesEngine(
       prev.score === snapshot.score &&
       prev.lives === snapshot.lives &&
       prev.level === snapshot.level &&
-      prev.tripleShot === snapshot.tripleShot &&
+      prev.extra?.value === snapshot.extra?.value &&
       prev.status === snapshot.status
     ) {
       return;
