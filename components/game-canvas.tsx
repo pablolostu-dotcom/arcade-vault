@@ -11,7 +11,7 @@
 
 import { useEffect, useImperativeHandle, useRef, type Ref } from "react";
 
-import type { EngineHandle, GameSnapshot } from "@/lib/games/asteroides/engine";
+import type { EngineHandle, GameSnapshot } from "@/lib/games/types";
 import { ENGINES } from "@/lib/games/registry";
 
 /** El mundo del motor. El canvas se estira por CSS; la física no se entera. */

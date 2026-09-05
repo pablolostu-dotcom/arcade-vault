@@ -7,7 +7,7 @@
 // asteroides en su bundle. Los import type de arriba se borran al compilar, así
 // que el único vínculo real con el motor es el import() de adentro.
 
-import type { EngineHandle, EngineOptions } from "./asteroides/engine";
+import type { EngineHandle, EngineOptions } from "./types";
 
 export type EngineFactory = (canvas: HTMLCanvasElement, options: EngineOptions) => EngineHandle;
 

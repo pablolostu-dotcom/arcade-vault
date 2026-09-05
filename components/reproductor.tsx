@@ -20,7 +20,7 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { submitScore, type SubmitScoreError } from "@/app/jugar/actions";
 import { GameCanvas, type GameCanvasHandle } from "@/components/game-canvas";
 import type { Game } from "@/lib/data";
-import type { GameSnapshot } from "@/lib/games/asteroides/engine";
+import type { GameSnapshot } from "@/lib/games/types";
 import { hasEngine } from "@/lib/games/registry";
 import { useSession } from "@/lib/session";
 
@@ -46,7 +46,8 @@ export function Reproductor({ game }: { game: PlayableGame }) {
   // Antes era la constante 3: el prototipo nunca descuenta vidas. Con motor sí
   // se descuentan, así que pasa a ser estado. Sin motor arranca y se queda en 3.
   const [lives, setLives] = useState(3);
-  const [tripleShot, setTripleShot] = useState(0);
+  // El stat propio de cada juego, ya formateado por el motor. Sin motor no hay.
+  const [extra, setExtra] = useState<GameSnapshot["extra"]>(undefined);
   const [paused, setPaused] = useState(false);
   const [over, setOver] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -77,9 +78,11 @@ export function Reproductor({ game }: { game: PlayableGame }) {
   // El motor solo emite cuando algún valor cambió: esto no corre por frame.
   const handleSnapshot = useCallback((snapshot: GameSnapshot) => {
     setScore(snapshot.score);
-    setLives(snapshot.lives);
+    // `lives` ya es opcional en el snapshot, pero acá todavía es number: el slot
+    // ♥ se vuelve condicional en el paso 4. Asteroides siempre lo manda.
+    setLives(snapshot.lives ?? 3);
     setLevel(snapshot.level);
-    setTripleShot(snapshot.tripleShot);
+    setExtra(snapshot.extra);
   }, []);
 
   const handleGameOver = useCallback((finalScore: number) => {
@@ -129,7 +132,7 @@ export function Reproductor({ game }: { game: PlayableGame }) {
     setScore(0);
     setLevel(1);
     setLives(3);
-    setTripleShot(0);
+    setExtra(undefined);
     setPaused(false);
     setOver(false);
     setSaved(false);
@@ -159,10 +162,10 @@ export function Reproductor({ game }: { game: PlayableGame }) {
             <div className="l">Nivel</div>
             <div className="v">{String(level).padStart(2, "0")}</div>
           </div>
-          {tripleShot > 0 && (
+          {extra && (
             <div className="hud-stat triple">
-              <div className="l">Triple disparo</div>
-              <div className="v">3x · {tripleShot.toFixed(1)}s</div>
+              <div className="l">{extra.label}</div>
+              <div className="v">{extra.value}</div>
             </div>
           )}
         </div>
