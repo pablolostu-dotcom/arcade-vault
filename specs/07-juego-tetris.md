@@ -1,6 +1,6 @@
 # SPEC 07 — TETRIS: el segundo juego jugable del vault
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 05, SPEC 06
 > **Date:** 2026-09-05
 > **Objective:** Portar el Tetris de `references/started-games/03-tetris/` a un motor de canvas en TypeScript y montarlo en `/jugar/tetris` como décimo juego del catálogo, generalizando de paso el contrato del motor que el SPEC 05 dejó atado a asteroides.
