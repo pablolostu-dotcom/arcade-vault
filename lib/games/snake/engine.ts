@@ -48,9 +48,15 @@ const QUEUE_MAX = 2;
 // lo que hace tiene consecuencia inmediata en vez de descubrir un salto de
 // velocidad al cruzar un contador que no ve. El piso está para que el juego siga
 // siendo jugable con reflejos humanos; se toca a las 20 frutas.
-const TICK_BASE = 140; // ms por tic al empezar
-const TICK_STEP = 4; // ms que baja por cada fruta comida
-const TICK_FLOOR = 60; // el piso
+//
+// Los tres números son un 30 % más lentos que los que fijó el SPEC 09 —140 / 4 /
+// 60—: la serpiente arrancaba demasiado rápido al probarla. Como la velocidad es
+// 1/tick, un 30 % menos es dividir el tic por 0,7. El piso quedó en 85 y no en
+// 86 a propósito: con 85 el tramo de aceleración sigue terminando exactamente en
+// la fruta 20, igual que antes (a las 19 el tic vale 86, a las 20 toca el piso).
+const TICK_BASE = 200; // ms por tic al empezar   (140 / 0,7)
+const TICK_STEP = 6; // ms que baja por cada fruta comida   (4 / 0,7)
+const TICK_FLOOR = 85; // el piso   (60 / 0,7)
 
 /** El tope del dt, igual que en los otros tres motores. Ver loop(). */
 const MAX_FRAME_MS = 50;
