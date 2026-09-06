@@ -204,6 +204,25 @@ export function createArkanoidEngine(
     keys[e.code] = false;
   };
 
+  /**
+   * El control canónico del género. Dos diferencias con el original:
+   *
+   *  - la escala es `W / rect.width`, NO `canvas.width / rect.width`.
+   *    <GameCanvas> fija canvas.width = W × devicePixelRatio, así que en una
+   *    pantalla HiDPI la fórmula del original daría el doble y la paleta se
+   *    movería a la mitad de velocidad, sin llegar nunca al borde derecho.
+   *  - sale temprano en pausa: el overlay de React tapa el canvas, pero si el
+   *    puntero entrara igual, mover el mouse arrastraría la paleta por debajo
+   *    y al reanudar saltaría.
+   */
+  const onMouseMove = (e: MouseEvent) => {
+    if (paused || state !== "playing") return;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0) return;
+    const mouseX = (e.clientX - rect.left) * (W / rect.width);
+    paddleX = Math.max(0, Math.min(W - PADDLE.w, mouseX - PADDLE.w / 2));
+  };
+
   // ── Paleta, pelota y niveles ────────────────────────────────────────────────
   function initPaddle() {
     paddleX = (W - PADDLE.w) / 2;
@@ -498,6 +517,9 @@ export function createArkanoidEngine(
       running = true;
       window.addEventListener("keydown", onKeyDown);
       window.addEventListener("keyup", onKeyUp);
+      // El mousemove va sobre el canvas y no sobre window: la paleta sigue al
+      // puntero solo mientras está encima de la pantalla del juego.
+      canvas.addEventListener("mousemove", onMouseMove);
       listenersAttached = true;
       initGame();
       lastSnapshot = null;
@@ -545,6 +567,7 @@ export function createArkanoidEngine(
       if (listenersAttached) {
         window.removeEventListener("keydown", onKeyDown);
         window.removeEventListener("keyup", onKeyUp);
+        canvas.removeEventListener("mousemove", onMouseMove);
         listenersAttached = false;
       }
     },
