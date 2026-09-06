@@ -37,6 +37,15 @@ export type EngineHandle = {
   resume(): void;
   restart(): void;
   end(): void; // el botón FIN: fuerza el game over
+  /**
+   * El botón de silencio del HUD. Los motores mudos lo implementan como no-op.
+   *
+   * Es un método del handle y no un módulo con estado global a propósito: el
+   * silencio vive en React, que es donde vive el resto del estado del
+   * reproductor, y así no queda un singleton mutable que dos motores montados
+   * a la vez podrían pisarse.
+   */
+  setMuted(muted: boolean): void;
   destroy(): void; // cancela el rAF y quita los listeners
 };
 

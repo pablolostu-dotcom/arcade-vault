@@ -490,6 +490,9 @@ export function createTetrisEngine(
       endGame();
     },
 
+    // Tetris es mudo: no hay nada que silenciar.
+    setMuted() {},
+
     destroy() {
       destroyed = true;
       running = false;
