@@ -38,8 +38,8 @@ Las fricciones reales son otras cuatro:
 **Fuera de alcance (para specs futuras):**
 
 - **Obstáculos y paredes internas.** El tablero queda vacío salvo la serpiente y la fruta. Diseñar layouts de muros para un nivel que no tiene techo es un spec propio.
-- **Las 6 verduras del atlas** (ajo, berenjena, brócoli, hongo, pimiento, maní). No entran al recorte ni al juego. Si más adelante se quiere riesgo negativo, va en otro spec.
-- **Las otras 8 frutas del atlas** (banana, uva, frutilla, zanahoria, durazno, tomate, moras, uva2). Quedan en `references/`, sin recortar.
+- **Los 10 sprites del atlas que no son fruta dulce** (calabaza, nabo, berenjena, zanahorias, hongo, brócoli, jalapeño, maní, tomate y un bol de ensalada). No entran al recorte ni al juego. Si más adelante se quiere riesgo negativo, va en otro spec.
+- **Las otras 4 frutas del atlas** (banana, uvas, frutilla, frambuesa). Quedan en `references/`, sin recortar.
 - **Controles táctiles y swipe.** Solo teclado, con el aviso que `.keyboard-notice` ya muestra en puntero grueso.
 - **Récord personal en el HUD y modo dos jugadores.** Mismos recortes que el SPEC 05 y el SPEC 08.
 - **Wrap por los bordes.** Se decidió que el borde mata; el wrap de asteroides no se replica.
@@ -153,11 +153,11 @@ El acumulador de tiempo usa el `dt` del `requestAnimationFrame`, **topeado en 50
 
 Tres escalones, con su valor y su probabilidad:
 
-| Escalón  | Frutas               | Valor | Probabilidad | Color del halo |
-| -------- | -------------------- | ----- | ------------ | -------------- |
-| `common` | manzana, cereza      | 10    | 70 %         | `#00ff88`      |
-| `medium` | naranja, kiwi, limón | 25    | 25 %         | `#00f5ff`      |
-| `rare`   | sandía, piña, melón  | 50    | 5 %          | `#ff006e`      |
+| Escalón  | Frutas                | Valor | Probabilidad | Color del halo |
+| -------- | --------------------- | ----- | ------------ | -------------- |
+| `common` | manzana, cereza       | 10    | 70 %         | `#00ff88`      |
+| `medium` | naranja, kiwi, limón  | 25    | 25 %         | `#00f5ff`      |
+| `rare`   | sandía, piña, durazno | 50    | 5 %          | `#ff006e`      |
 
 Hay **una sola fruta en el tablero a la vez** y **no caduca**: se queda hasta que la serpiente la come. Al comerla se sortea el escalón por probabilidad, después la fruta dentro del escalón con probabilidad uniforme, y después la celda.
 
@@ -214,11 +214,15 @@ La pausa **no** la ata el motor: `<Reproductor>` ya ata `Escape` y `P` desde el 
 
 ### El atlas de sprites
 
-Origen: `references/source-assets/snake-assets/fruits.png`, de 3790×442 y 572 KB, con las 22 frutas en la fila `y = 136…295`. Las coordenadas de cada recorte están en `references/source-assets/snake-assets/sprites.js`.
+Origen: `references/source-assets/snake-assets/fruits.png`, de 3790×442 y 572 KB, con las 22 frutas en la fila `y = 136…295`.
+
+**`sprites.js` no sirve como tabla de nombres.** Sus 22 pares `x`/`w` son correctos —coinciden uno a uno con las celdas detectadas por análisis de alpha sobre el PNG— pero las etiquetas están cambiadas de lugar: su `apple` es una naranja, su `kiwi` es una sandía, su `melon` es un bol de ensalada. La tabla de abajo son las coordenadas verificadas contra la imagen, no las copiadas del archivo.
+
+**No hay melón en la hoja.** Los 22 sprites son manzana, banana, piña, uvas, calabaza, nabo, berenjena, frutilla, cerezas, zanahorias, hongo, brócoli, sandía, jalapeño, kiwi, limón, naranja, durazno, maní, frambuesa, tomate y un bol de ensalada. El escalón `rare` cierra con **durazno** en lugar de melón: es el único tono —rosa pálido— que no repite ninguno de los otros siete sprites elegidos.
 
 Se recorta **una sola vez** a las 8 frutas que el juego usa y se commitea el resultado en `public/snake/fruits.png`. El artefacto que entra al repo es el PNG; el script del recorte no queda.
 
-Cada fruta se pega centrada en una celda de **170×160** —el ancho de la más ancha, el kiwi— así que el atlas mide **1360×160** y el índice de una fruta es todo lo que hace falta para dibujarla:
+Cada fruta se pega centrada en una celda de **170×160** —el ancho de la más ancha, la sandía— así que el atlas mide **1360×160** y el índice de una fruta es todo lo que hace falta para dibujarla:
 
 ```ts
 const SPRITE_W = 170;
@@ -228,16 +232,16 @@ const SPRITE_H = 160;
 
 El orden y las coordenadas de origen, para que el recorte sea reproducible:
 
-| Índice | Fruta      | Escalón  | Origen en `fruits.png`        |
-| ------ | ---------- | -------- | ----------------------------- |
-| 0      | apple      | `common` | `x 2786, y 136, w 110, h 160` |
-| 1      | cherry     | `common` | `x 1066, y 136, w 110, h 160` |
-| 2      | orange     | `medium` | `x 186, y 136, w 150, h 160`  |
-| 3      | kiwi       | `medium` | `x 2068, y 136, w 170, h 160` |
-| 4      | lemon      | `medium` | `x 2250, y 136, w 140, h 160` |
-| 5      | watermelon | `rare`   | `x 1734, y 136, w 150, h 160` |
-| 6      | pineapple  | `rare`   | `x 3454, y 136, w 150, h 160` |
-| 7      | melon      | `rare`   | `x 3637, y 136, w 130, h 160` |
+| Índice | Fruta      | En la hoja | Escalón  | Origen en `fruits.png`        |
+| ------ | ---------- | ---------- | -------- | ----------------------------- |
+| 0      | apple      | manzana    | `common` | `x 34, y 136, w 110, h 160`   |
+| 1      | cherry     | cerezas    | `common` | `x 1400, y 136, w 130, h 160` |
+| 2      | orange     | naranja    | `medium` | `x 2786, y 136, w 110, h 160` |
+| 3      | kiwi       | kiwi       | `medium` | `x 2432, y 136, w 130, h 160` |
+| 4      | lemon      | limón      | `medium` | `x 2604, y 136, w 130, h 160` |
+| 5      | watermelon | sandía     | `rare`   | `x 2068, y 136, w 170, h 160` |
+| 6      | pineapple  | piña       | `rare`   | `x 378, y 136, w 110, h 160`  |
+| 7      | peach      | durazno    | `rare`   | `x 2948, y 136, w 130, h 160` |
 
 En pantalla la fruta se dibuja en un rectángulo de **28×26** centrado en su celda de 25 px: desborda un píxel y medio por lado, que es lo que hace que se lea dentro del marco CRT sin invadir la celda vecina.
 
@@ -304,7 +308,7 @@ El `shadowBlur` va solo en la cabeza, en el marco y en el halo de la fruta. El c
 - [ ] `/juegos/snake` y `/jugar/snake` responden 200.
 - [ ] `/salon` muestra una tab nueva con el ranking de SNAKE.
 - [ ] `public/snake/fruits.png` mide 1360×160, pesa menos de 120 KB y tiene fondo transparente.
-- [ ] Las ocho frutas del atlas están en el orden de la tabla: apple, cherry, orange, kiwi, lemon, watermelon, pineapple, melon.
+- [ ] Las ocho frutas del atlas están en el orden de la tabla: apple, cherry, orange, kiwi, lemon, watermelon, pineapple, peach.
 - [ ] Con el atlas cargado, la fruta se dibuja con su sprite; bloqueando `/snake/fruits.png` en las devtools, el juego sigue siendo jugable y la fruta se dibuja como círculo del color de su escalón.
 - [ ] El tablero es de 32×24 celdas de 25 px y llena el canvas sin bandas.
 - [ ] La serpiente arranca con 3 celdas en el centro mirando a la derecha.
@@ -347,6 +351,7 @@ El `shadowBlur` va solo en la cabeza, en el marco y en el halo de la fruta. El c
 - **Sí:** los sprites entran y el repo deja de estar libre de imágenes. Es lo contrario de lo que decidieron el SPEC 05 y el SPEC 08, y el motivo es que acá el asset **es** el punto de partida del pedido, no un accesorio del código de referencia. Una fruta dibujada con dos arcos no es lo mismo que una fruta.
 - **Sí:** un atlas recortado a las 8 en vez del original de 572 KB o de ocho PNG sueltos. Una sola descarga, un solo `drawImage` con `sx = index * 170`, y menos de 120 KB. Ocho archivos sueltos habrían sido ocho descargas y ocho `Image` que precargar antes de dibujar.
 - **Sí:** celdas de recorte uniformes de 170×160, aunque desperdicien transparencia en las frutas angostas. El ancho variable habría obligado a portar una tabla de coordenadas a mano; con la celda uniforme, el índice de la fruta es toda la información que el motor necesita.
+- **Sí:** durazno cierra el escalón `rare` en lugar de melón, y las coordenadas se verificaron contra la imagen en vez de confiar en `sprites.js`. La hoja no tiene melón —lo que ese archivo llama `melon` es un bol de ensalada— y sus 22 etiquetas están cambiadas de lugar aunque sus 22 pares `x`/`w` sean exactos. Recortar según la tabla original daba naranja, berenjena, banana, sandía, jalapeño, hongo, tomate y un bol.
 - **No:** el script del recorte no queda en el repo. Es una transformación de un solo uso sobre un archivo que sigue estando en `references/`; el artefacto que importa es el PNG, y un script que corre una vez y nunca más es código muerto con `sharp` como dependencia declarada.
 - **Sí:** el juego arranca antes de que el atlas cargue, con la fruta dibujada como respaldo vectorial. Evita agregar un estado `loading` al contrato que comparten los cuatro motores para un caso que tiene uno solo, evita la pantalla negra de esperar a `onload`, y hace que un 404 del PNG degrade el juego en vez de romperlo.
 - **Sí:** el halo del escalón se dibuja siempre, debajo del sprite. Sin él, los tres escalones de valor serían una tabla que el jugador tiene que memorizar; con él, la rareza se lee de un vistazo y el sprite queda como lo que es, decoración con carácter.
