@@ -1034,6 +1034,79 @@
     filter: drop-shadow(0 0 7px rgba(255, 0, 110, 0.7));
   }
 
+  /* SNAKE: la serpiente amarilla a mitad de recorrido, sobre la grilla de 8×6
+     que resume el tablero de 32×24 del motor. El cuerpo serpentea en tres
+     tramos —sube, dobla a la derecha, vuelve a subir— y la cabeza queda
+     apuntando a la fruta magenta que tiene justo encima; las otras dos son los
+     otros dos escalones de valor, verde `common` y cyan `medium`, cada una con
+     el halo de su color, que es exactamente como las dibuja el canvas.
+     Celdas del 12.5% × 16.667% con posiciones cada 100/7 y 100/5: caen exactas
+     sobre las líneas de la grilla, sin la deriva de un ancho con hueco.
+     Se distingue de SERPENTINA —la otra tarjeta de serpiente— porque aquella
+     es verde, con un cuerpo horizontal recto y un solo punto magenta, y esta
+     es amarilla, con recorrido, grilla y tres frutas. */
+  .cover-serpiente {
+    background:
+      /* la grilla del tablero, apenas visible */
+      repeating-linear-gradient(90deg, rgba(245, 255, 0, 0.07) 0 1px, transparent 1px 12.5%),
+      repeating-linear-gradient(0deg, rgba(245, 255, 0, 0.07) 0 1px, transparent 1px 16.667%),
+      /* el vacío, con el resplandor ámbar detrás de la cabeza */
+        radial-gradient(circle at 57% 34%, #2a2400, #05050d 72%);
+  }
+  /* Las tres frutas, con el fruto lleno y el halo de su escalón alrededor:
+     la magenta `rare` en (4,1) —la que la cabeza está por morder—, la verde
+     `common` en (1,2) y la cyan `medium` en (6,3). Los centros de celda caen
+     en (c + 0.5) × 12.5% y (r + 0.5) × 16.667%. */
+  .cover-serpiente::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(
+        circle at 56.25% 25%,
+        var(--magenta) 0 6px,
+        rgba(255, 0, 110, 0.32) 6px 10px,
+        transparent 11px
+      ),
+      radial-gradient(
+        circle at 18.75% 41.667%,
+        var(--green) 0 6px,
+        rgba(0, 255, 136, 0.32) 6px 10px,
+        transparent 11px
+      ),
+      radial-gradient(
+        circle at 81.25% 58.333%,
+        var(--cyan) 0 6px,
+        rgba(0, 245, 255, 0.32) 6px 10px,
+        transparent 11px
+      );
+  }
+  /* La serpiente: la cabeza en (4,2) a alpha lleno y el cuerpo desde (4,3)
+     hasta la cola en (2,5), bajando de 0.88 a 0.45. Es el mismo degradado de
+     estela que dibuja el motor, y el que le da segmentos sin gastar una sombra
+     por celda. */
+  .cover-serpiente::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      /* la cabeza, mirando hacia arriba */
+      linear-gradient(var(--yellow), var(--yellow)) 57.143% 40%/12.5% 16.667% no-repeat,
+      /* el cuerpo, de adelante hacia atrás */
+        linear-gradient(rgba(245, 255, 0, 0.88), rgba(245, 255, 0, 0.88)) 57.143% 60%/12.5% 16.667%
+        no-repeat,
+      linear-gradient(rgba(245, 255, 0, 0.77), rgba(245, 255, 0, 0.77)) 57.143% 80%/12.5% 16.667%
+        no-repeat,
+      linear-gradient(rgba(245, 255, 0, 0.66), rgba(245, 255, 0, 0.66)) 42.857% 80%/12.5% 16.667%
+        no-repeat,
+      linear-gradient(rgba(245, 255, 0, 0.55), rgba(245, 255, 0, 0.55)) 28.571% 80%/12.5% 16.667%
+        no-repeat,
+      /* la cola */
+        linear-gradient(rgba(245, 255, 0, 0.45), rgba(245, 255, 0, 0.45)) 28.571% 100%/12.5% 16.667%
+        no-repeat;
+    filter: drop-shadow(0 0 7px rgba(245, 255, 0, 0.5));
+  }
+
   /* ===== detail screen ===== */
   .av-detail {
     display: grid;
