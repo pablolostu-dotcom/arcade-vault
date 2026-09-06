@@ -213,24 +213,112 @@ export function createSnakeEngine(canvas: HTMLCanvasElement, options: EngineOpti
   let atlasReady = false;
 
   // ── Audio ───────────────────────────────────────────────────────────────────
-  // El paso 5 del SPEC 09 lo llena. Por ahora setMuted() solo guarda la
-  // preferencia y playEat()/playDie() no hacen nada: el resto del motor ya llama
-  // a los dos por encima de la fuente, así que elegirla no toca esta lógica.
+  // Sintetizado con WebAudio: es el camino B del paso 5 del SPEC 09, y se tomó
+  // porque el camino A no cierra. En los bancos alcanzables no hay un par CC0
+  // usable: el único efecto de fin de partida con licencia verificable
+  // (commons.wikimedia.org/wiki/File:Fim_efeito_sonoro_retrô.oga, CC0) dura
+  // 2,38 s y pesa 482 KB —veinticinco veces todo el audio del SPEC 08— y viene
+  // en Ogg, que Safari no reproduce; no hay ffmpeg para recortarlo ni pasarlo a
+  // mp3, Pixabay responde 403 y freesound pide un token de OAuth para bajar.
+  //
+  // A cambio no entra ningún binario al repo y el resultado es exactamente lo
+  // que el juego pide: un blip sintetizado ES el sonido del Snake de Nokia.
+  //
+  // Nada de esto corre al importar el módulo ni al crear el motor: el
+  // AudioContext se construye en start() y se cierra en destroy().
+  const SOUND_VOLUME = 0.4; // el mismo del SPEC 08
+  /** Comer: dos escalones ascendentes, corto y agudo. */
+  const EAT_MS = 150;
+  const EAT_FROM = 880; // A5
+  const EAT_TO = 1318.5; // E6, una quinta arriba
+  /** Morir: un barrido descendente. */
+  const DIE_MS = 400;
+  const DIE_FROM = 440; // A4
+  const DIE_TO = 55; // A1
+  /** exponentialRampToValueAtTime no acepta 0: este es el cero práctico. */
+  const SILENCE = 0.0001;
+
+  let audioCtx: AudioContext | null = null;
+  let master: GainNode | null = null;
+  /** Los osciladores vivos, para que destroy() los corte sin esperar su stop(). */
+  const voices = new Set<OscillatorNode>();
   let muted = false;
   /**
-   * La política de autoplay exige un gesto antes del primer play(). Se levanta
+   * La política de autoplay exige un gesto antes de que suene nada. Se levanta
    * con el primer keydown de la partida: sin teclas la serpiente no cambia de
-   * dirección, así que el gesto llega en el primer segundo.
+   * dirección, así que el gesto llega en el primer segundo. Hasta entonces no se
+   * programa ni un nodo y no hay NotAllowedError que registrar.
    */
   let unlocked = false;
 
-  function playEat() {
-    if (muted || !unlocked) return;
+  /**
+   * El AudioContext nace suspendido cuando todavía no hubo gesto, y programarle
+   * algo así es lo que dispara el warning de autoplay. Por eso el resume() va
+   * acá, en el primer keydown, y playEat()/playDie() no hacen nada antes.
+   */
+  function unlockAudio() {
+    if (unlocked) return;
+    unlocked = true;
+    if (audioCtx?.state === "suspended") void audioCtx.resume().catch(() => {});
   }
 
-  function playDie() {
-    if (muted || !unlocked) return;
+  /**
+   * Un oscilador con su envolvente, conectado al master. Es todo lo que
+   * necesitan los dos efectos: cambia el tipo de onda, las dos frecuencias y la
+   * duración.
+   */
+  function blip(type: OscillatorType, from: number, to: number, ms: number, slide: boolean) {
+    const ctx2 = audioCtx;
+    const out = master;
+    if (!ctx2 || !out || muted || !unlocked || ctx2.state === "closed") return;
+
+    const t0 = ctx2.currentTime;
+    const dur = ms / 1000;
+    const osc = ctx2.createOscillator();
+    const env = ctx2.createGain();
+
+    osc.type = type;
+    osc.frequency.setValueAtTime(from, t0);
+    if (slide) {
+      // El barrido de la muerte: exponencial, que es como lo oye el oído.
+      osc.frequency.exponentialRampToValueAtTime(to, t0 + dur);
+    } else {
+      // El bocado: un escalón seco a mitad de camino, no un glissando.
+      osc.frequency.setValueAtTime(to, t0 + dur / 2);
+    }
+
+    // Ataque de 5 ms para que no chasquee, y caída al silencio.
+    env.gain.setValueAtTime(SILENCE, t0);
+    env.gain.exponentialRampToValueAtTime(1, t0 + 0.005);
+    env.gain.exponentialRampToValueAtTime(SILENCE, t0 + dur);
+
+    osc.connect(env).connect(out);
+    osc.start(t0);
+    osc.stop(t0 + dur);
+    voices.add(osc);
+    osc.onended = () => {
+      voices.delete(osc);
+      osc.disconnect();
+      env.disconnect();
+    };
   }
+
+  /** Corta en el acto lo que esté sonando. Lo usan setMuted(true) y destroy(). */
+  function stopVoices() {
+    for (const osc of voices) {
+      try {
+        osc.onended = null;
+        osc.stop();
+        osc.disconnect();
+      } catch {
+        // Un oscilador que ya terminó tira InvalidStateError: no es un problema.
+      }
+    }
+    voices.clear();
+  }
+
+  const playEat = () => blip("square", EAT_FROM, EAT_TO, EAT_MS, false);
+  const playDie = () => blip("sawtooth", DIE_FROM, DIE_TO, DIE_MS, true);
 
   // ── El tic ──────────────────────────────────────────────────────────────────
   function tickMs(): number {
@@ -264,7 +352,7 @@ export function createSnakeEngine(canvas: HTMLCanvasElement, options: EngineOpti
   const onKeyDown = (e: KeyboardEvent) => {
     // Antes de cualquier filtro: al navegador le sirve como gesto cualquier
     // keydown, no solo los ocho del juego.
-    unlocked = true;
+    unlockAudio();
     const next = KEY_TO_DIRECTION[e.code];
     if (!next) return;
     // El preventDefault va aunque el juego esté pausado o terminado: las flechas
@@ -596,6 +684,17 @@ export function createSnakeEngine(canvas: HTMLCanvasElement, options: EngineOpti
       };
       atlas.src = ATLAS_SRC;
 
+      // El AudioContext también se crea acá y no a nivel de módulo: en el
+      // servidor no existe. Nace suspendido mientras no haya gesto y el resume()
+      // llega con el primer keydown, en unlockAudio(); hasta entonces no se le
+      // programa ningún nodo, que es lo que evita el warning de autoplay.
+      // El master arranca ya en su volumen o en cero, según cómo haya venido
+      // setMuted() desde <GameCanvas>, que lo llama antes que a start().
+      audioCtx = new AudioContext();
+      master = audioCtx.createGain();
+      master.gain.value = muted ? 0 : SOUND_VOLUME;
+      master.connect(audioCtx.destination);
+
       initGame();
       lastSnapshot = null;
       emitSnapshot();
@@ -632,11 +731,16 @@ export function createSnakeEngine(canvas: HTMLCanvasElement, options: EngineOpti
 
     /**
      * El botón de silencio del HUD. <GameCanvas> lo llama justo después de crear
-     * el motor —antes de start()— y de nuevo en cada cambio, así que tiene que
-     * aguantar los dos momentos. El paso 5 del SPEC 09 le da la fuente de audio.
+     * el motor —antes de start(), cuando el AudioContext todavía no existe— y de
+     * nuevo en cada cambio, así que tiene que aguantar los dos momentos.
+     *
+     * Silenciar corta en el acto lo que esté sonando; volver al sonido rehabilita
+     * sin reproducir nada por su cuenta.
      */
     setMuted(next: boolean) {
       muted = next;
+      if (master) master.gain.value = muted ? 0 : SOUND_VOLUME;
+      if (muted) stopVoices();
     },
 
     destroy() {
@@ -651,6 +755,15 @@ export function createSnakeEngine(canvas: HTMLCanvasElement, options: EngineOpti
         atlas = null;
       }
       atlasReady = false;
+      // Sin esto, el barrido de la muerte disparado en el último frame sigue
+      // sonando después de que la pantalla ya cambió de juego, y cada visita
+      // deja un AudioContext vivo: el navegador solo permite unos pocos.
+      stopVoices();
+      unlocked = false;
+      master?.disconnect();
+      master = null;
+      if (audioCtx && audioCtx.state !== "closed") void audioCtx.close().catch(() => {});
+      audioCtx = null;
       if (listenersAttached) {
         window.removeEventListener("keydown", onKeyDown);
         listenersAttached = false;
