@@ -5,8 +5,10 @@
 // balance. Lo que cambia es cómo se monta. El original toma el canvas de
 // document en la línea 1 y arranca el loop dentro de loadSpritesheet() en la
 // última línea del archivo; acá NADA corre al importar el módulo. Todos los
-// efectos secundarios (listeners, requestAnimationFrame, y en el paso siguiente
-// los elementos Audio) viven dentro de start() y se deshacen en destroy().
+// efectos secundarios (listeners, requestAnimationFrame y los elementos Audio)
+// viven dentro de start() y se deshacen en destroy(). Los dos `new Audio()` de
+// nivel de módulo del original importan especialmente: corren en el servidor y
+// revientan el build con "Audio is not defined".
 //
 // Lo que el portal ya provee se elimina, no se oculta:
 //   - el HUD dibujado en el canvas (Score:, Nivel: y las vidas como pelotas)
@@ -84,6 +86,30 @@ const HIGHLIGHT = "rgba(255, 255, 255, 0.12)";
 
 /** Las teclas del juego: se les corta el scroll de la página mientras se juega. */
 const HANDLED_KEYS = new Set(["ArrowLeft", "ArrowRight"]);
+
+// ── Audio ─────────────────────────────────────────────────────────────────────
+// Los dos efectos del original, servidos desde public/. Son los primeros —y por
+// ahora los únicos— sonidos del portal.
+const BOUNCE_SRC = "/sounds/ball-bounce.mp3";
+const BREAK_SRC = "/sounds/break-sound.mp3";
+
+/**
+ * Volumen fijo. No es rebalancear el juego —no toca ninguna constante de física
+ * ni de puntaje— sino una decisión del portal: un efecto a volumen completo
+ * dentro de una página web es agresivo de un modo que el mismo efecto en una
+ * pestaña dedicada no es.
+ */
+const SOUND_VOLUME = 0.4;
+
+/**
+ * Cuatro elementos por sonido, con índice circular. El original hace
+ * `bounceSound.cloneNode().play()` en cada rebote: crea un <audio> nuevo cada
+ * vez y no lo suelta nunca, así que una partida larga deja cientos de nodos
+ * vivos. Cuatro alcanzan para que dos rebotes seguidos no se corten.
+ */
+const SOUND_POOL_SIZE = 4;
+
+type SoundPool = { els: HTMLAudioElement[]; next: number };
 
 type LevelBlock = { col: number; row: number; color: BlockColor };
 type Level = { speed: number; blocks: LevelBlock[] };
@@ -189,10 +215,61 @@ export function createArkanoidEngine(
   let listenersAttached = false;
   let lastSnapshot: GameSnapshot | null = null;
 
+  // ── Audio ───────────────────────────────────────────────────────────────────
+  // Los elementos se crean en start(), no acá y menos a nivel de módulo: `new
+  // Audio()` no existe en el servidor.
+  let bouncePool: SoundPool | null = null;
+  let breakPool: SoundPool | null = null;
+  let muted = false;
+  /**
+   * La política de autoplay del navegador exige un gesto del usuario antes del
+   * primer play(). Se levanta con el primer keydown o el primer mousemove de la
+   * partida: como la paleta no se mueve sin uno de los dos, el gesto llega en
+   * el primer segundo y el navegador nunca rechaza la reproducción. Hasta
+   * entonces no se llama a play() y no hay NotAllowedError que registrar.
+   */
+  let unlocked = false;
+
+  function createPool(src: string): SoundPool {
+    return {
+      els: Array.from({ length: SOUND_POOL_SIZE }, () => {
+        const el = new Audio(src);
+        el.volume = SOUND_VOLUME;
+        el.preload = "auto";
+        return el;
+      }),
+      next: 0,
+    };
+  }
+
+  /** Los ocho elementos, o ninguno si todavía no se llamó a start(). */
+  function eachSound(fn: (el: HTMLAudioElement) => void) {
+    for (const pool of [bouncePool, breakPool]) {
+      if (!pool) continue;
+      for (const el of pool.els) fn(el);
+    }
+  }
+
+  function play(pool: SoundPool | null) {
+    if (!pool || muted || !unlocked) return;
+    const el = pool.els[pool.next];
+    pool.next = (pool.next + 1) % pool.els.length;
+    el.currentTime = 0;
+    // El catch se come el rechazo de la política de autoplay: un sonido que no
+    // suena no puede tumbar el frame.
+    void el.play().catch(() => {});
+  }
+
+  const playBounce = () => play(bouncePool);
+  const playBreak = () => play(breakPool);
+
   // ── Input ───────────────────────────────────────────────────────────────────
   const keys: Record<string, boolean> = {};
 
   const onKeyDown = (e: KeyboardEvent) => {
+    // Antes del filtro de teclas: cualquier keydown le sirve al navegador como
+    // gesto, no solo las dos flechas del juego.
+    unlocked = true;
     if (!HANDLED_KEYS.has(e.code)) return;
     e.preventDefault();
     keys[e.code] = true;
@@ -216,6 +293,9 @@ export function createArkanoidEngine(
    *    y al reanudar saltaría.
    */
   const onMouseMove = (e: MouseEvent) => {
+    // También cuenta como gesto, y antes de las guardas: mover el mouse en
+    // pausa desbloquea el audio igual.
+    unlocked = true;
     if (paused || state !== "playing") return;
     const rect = canvas.getBoundingClientRect();
     if (rect.width === 0) return;
@@ -302,14 +382,17 @@ export function createArkanoidEngine(
     if (ball.x <= 0) {
       ball.x = 0;
       ball.vx = Math.abs(ball.vx);
+      playBounce();
     }
     if (ball.x + BALL.w >= W) {
       ball.x = W - BALL.w;
       ball.vx = -Math.abs(ball.vx);
+      playBounce();
     }
     if (ball.y <= 0) {
       ball.y = 0;
       ball.vy = Math.abs(ball.vy);
+      playBounce();
     }
 
     // Rebote en la paleta. Sin control de ángulo: invierte vy y deja vx intacto,
@@ -323,6 +406,7 @@ export function createArkanoidEngine(
     ) {
       ball.y = PADDLE.y - BALL.h;
       ball.vy = -Math.abs(ball.vy);
+      playBounce();
     }
 
     // Bloques. Un bloque por frame, como el original.
@@ -343,6 +427,7 @@ export function createArkanoidEngine(
       // Sin detección de lado: la pelota que entra por el costado sale hacia
       // arriba igual. Es el original.
       ball.vy = -ball.vy;
+      playBreak();
 
       if (blocks.every((b) => !b.alive)) {
         if (currentLevel < LEVELS.length) {
@@ -521,6 +606,8 @@ export function createArkanoidEngine(
       // puntero solo mientras está encima de la pantalla del juego.
       canvas.addEventListener("mousemove", onMouseMove);
       listenersAttached = true;
+      bouncePool = createPool(BOUNCE_SRC);
+      breakPool = createPool(BREAK_SRC);
       initGame();
       lastSnapshot = null;
       emitSnapshot();
@@ -557,13 +644,34 @@ export function createArkanoidEngine(
       emitSnapshot();
     },
 
-    // El audio entra en el paso 5 del plan; hasta entonces el motor es mudo.
-    setMuted() {},
+    /**
+     * El botón de silencio del HUD. <GameCanvas> lo llama justo después de
+     * crear el motor —antes de start(), cuando los pools todavía no existen— y
+     * de nuevo en cada cambio, así que tiene que aguantar los dos momentos.
+     */
+    setMuted(next: boolean) {
+      muted = next;
+      if (!muted) return;
+      // Silenciar corta en el acto lo que esté sonando; volver al sonido no
+      // reproduce nada por su cuenta.
+      eachSound((el) => {
+        el.pause();
+        el.currentTime = 0;
+      });
+    },
 
     destroy() {
       destroyed = true;
       running = false;
       stopLoop();
+      // Los ocho elementos del pool: sin esto, un rebote disparado en el último
+      // frame sigue sonando después de que la pantalla ya cambió de juego.
+      eachSound((el) => {
+        el.pause();
+        el.src = "";
+      });
+      bouncePool = null;
+      breakPool = null;
       if (listenersAttached) {
         window.removeEventListener("keydown", onKeyDown);
         window.removeEventListener("keyup", onKeyUp);
