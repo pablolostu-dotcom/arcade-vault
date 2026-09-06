@@ -959,6 +959,81 @@
     filter: drop-shadow(0 0 7px rgba(0, 245, 255, 0.55));
   }
 
+  /* ARKANOID: el muro visto de frente, ya con dos boquetes abiertos y la
+     pelota subiendo por el más ancho. Las cuatro filas son los colores de
+     bloque del motor (cyan, magenta, yellow, green) y la paleta es magenta
+     con glow, igual que la dibuja el canvas. Se distingue de BLOQUE BUSTER
+     —la otra tarjeta de paleta y bloques— porque aquella es un muro entero
+     de bandas repetidas y esta es una partida ya empezada. */
+  .cover-arkanoid {
+    background:
+      /* el resplandor de la paleta desde abajo */
+      radial-gradient(ellipse 60% 34% at 52% 100%, rgba(255, 0, 110, 0.28), transparent 70%),
+      /* el vacío */ radial-gradient(circle at 50% 20%, #1a0a24, #05050d 74%);
+  }
+  /* El muro: seis columnas por cuatro filas, con las posiciones 0%…100%
+     repartiendo las celdas igual que en .cover-tetris. Faltan tres celdas:
+     la columna 4 en las dos filas de abajo —el canal por el que sube la
+     pelota— y la columna 2 en la fila de la base. */
+  .cover-arkanoid::after {
+    content: "";
+    position: absolute;
+    left: 7%;
+    right: 7%;
+    top: 11%;
+    height: 38%;
+    background:
+      /* fila 1 — cyan */
+      linear-gradient(#00f5ff, #00f5ff) 0% 0%/15.6% 22% no-repeat,
+      linear-gradient(#00f5ff, #00f5ff) 20% 0%/15.6% 22% no-repeat,
+      linear-gradient(#00f5ff, #00f5ff) 40% 0%/15.6% 22% no-repeat,
+      linear-gradient(#00f5ff, #00f5ff) 60% 0%/15.6% 22% no-repeat,
+      linear-gradient(#00f5ff, #00f5ff) 80% 0%/15.6% 22% no-repeat,
+      linear-gradient(#00f5ff, #00f5ff) 100% 0%/15.6% 22% no-repeat,
+      /* fila 2 — magenta */ linear-gradient(#ff006e, #ff006e) 0% 33.3%/15.6% 22% no-repeat,
+      linear-gradient(#ff006e, #ff006e) 20% 33.3%/15.6% 22% no-repeat,
+      linear-gradient(#ff006e, #ff006e) 40% 33.3%/15.6% 22% no-repeat,
+      linear-gradient(#ff006e, #ff006e) 60% 33.3%/15.6% 22% no-repeat,
+      linear-gradient(#ff006e, #ff006e) 80% 33.3%/15.6% 22% no-repeat,
+      linear-gradient(#ff006e, #ff006e) 100% 33.3%/15.6% 22% no-repeat,
+      /* fila 3 — yellow, sin la columna 4 */ linear-gradient(#f5ff00, #f5ff00) 0% 66.7%/15.6% 22%
+        no-repeat,
+      linear-gradient(#f5ff00, #f5ff00) 20% 66.7%/15.6% 22% no-repeat,
+      linear-gradient(#f5ff00, #f5ff00) 40% 66.7%/15.6% 22% no-repeat,
+      linear-gradient(#f5ff00, #f5ff00) 80% 66.7%/15.6% 22% no-repeat,
+      linear-gradient(#f5ff00, #f5ff00) 100% 66.7%/15.6% 22% no-repeat,
+      /* fila 4 — green, sin las columnas 2 y 4 */ linear-gradient(#00ff88, #00ff88) 0% 100%/15.6%
+        22% no-repeat,
+      linear-gradient(#00ff88, #00ff88) 40% 100%/15.6% 22% no-repeat,
+      linear-gradient(#00ff88, #00ff88) 80% 100%/15.6% 22% no-repeat,
+      linear-gradient(#00ff88, #00ff88) 100% 100%/15.6% 22% no-repeat;
+    filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.65));
+  }
+  /* La pelota con su estela, alineada al centro de la columna 4 del muro
+     (60% de posición sobre celdas del 15.6% ⇒ centro en el 58.4% de la
+     banda), y la paleta magenta abajo, de la que acaba de salir. */
+  .cover-arkanoid::before {
+    content: "";
+    position: absolute;
+    left: 7%;
+    right: 7%;
+    top: 0;
+    bottom: 0;
+    background:
+      /* la pelota, entrando al boquete */
+      radial-gradient(
+        circle at 58.4% 60%,
+        var(--cyan) 0 5px,
+        rgba(0, 245, 255, 0.35) 5px 9px,
+        transparent 10px
+      ),
+      /* la estela */
+        radial-gradient(circle at 58.4% 69%, rgba(0, 245, 255, 0.5) 0 3.5px, transparent 4.5px),
+      radial-gradient(circle at 58.4% 77%, rgba(0, 245, 255, 0.25) 0 2.5px, transparent 3.5px),
+      /* la paleta */ linear-gradient(var(--magenta), var(--magenta)) 52% 90%/26% 5.5% no-repeat;
+    filter: drop-shadow(0 0 7px rgba(255, 0, 110, 0.7));
+  }
+
   /* ===== detail screen ===== */
   .av-detail {
     display: grid;
@@ -1262,7 +1337,11 @@
     aspect-ratio: 4 / 3;
     background: #000;
     outline: none;
-    pointer-events: none;
+    /* ARKANOID mueve la paleta con el mouse sobre el canvas y necesita recibir
+       el evento. Los otros dos motores no registran ningún listener de
+       puntero, así que esto no les cambia nada; el overlay de pausa (z-index 5)
+       sigue tapando el canvas y la pausa tampoco cambia. */
+    pointer-events: auto;
   }
 
   /* Aviso de teclado. Oculto por defecto y visible solo con puntero grueso:

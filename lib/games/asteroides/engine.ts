@@ -654,6 +654,9 @@ export function createAsteroidesEngine(
       emitSnapshot();
     },
 
+    // Asteroides es mudo: no hay nada que silenciar.
+    setMuted() {},
+
     destroy() {
       destroyed = true;
       running = false;

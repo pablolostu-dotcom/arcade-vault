@@ -27,12 +27,20 @@ export type GameCanvasHandle = {
 
 type GameCanvasProps = {
   gameId: string;
+  /**
+   * El silencio baja por una prop y no por GameCanvasHandle: el motor se crea
+   * después de un import() dinámico, así que un setMuted() imperativo llamado
+   * al montar encontraría engineRef en null y el primer sonido escaparía
+   * aunque el portal estuviera silenciado. Como prop se aplica dos veces —justo
+   * después de createEngine() y en el efecto de cambio— y ese hueco no existe.
+   */
+  muted: boolean;
   onSnapshot: (snapshot: GameSnapshot) => void;
   onGameOver: (finalScore: number) => void;
   ref?: Ref<GameCanvasHandle>;
 };
 
-export function GameCanvas({ gameId, onSnapshot, onGameOver, ref }: GameCanvasProps) {
+export function GameCanvas({ gameId, muted, onSnapshot, onGameOver, ref }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<EngineHandle | null>(null);
 
@@ -42,6 +50,14 @@ export function GameCanvas({ gameId, onSnapshot, onGameOver, ref }: GameCanvasPr
   useEffect(() => {
     callbacksRef.current = { onSnapshot, onGameOver };
   }, [onSnapshot, onGameOver]);
+
+  // Y el silencio también: el efecto de montaje lo lee de acá en vez de
+  // depender de `muted`, así tocar el botón no vuelve a crear el motor.
+  const mutedRef = useRef(muted);
+  useEffect(() => {
+    mutedRef.current = muted;
+    engineRef.current?.setMuted(muted);
+  }, [muted]);
 
   useImperativeHandle(
     ref,
@@ -77,6 +93,8 @@ export function GameCanvas({ gameId, onSnapshot, onGameOver, ref }: GameCanvasPr
         onGameOver: (finalScore) => callbacksRef.current.onGameOver(finalScore),
       });
       engineRef.current = engine;
+      // Antes de start(): con el portal silenciado, ni el primer frame suena.
+      engine.setMuted(mutedRef.current);
       engine.start();
     });
 

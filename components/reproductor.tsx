@@ -26,6 +26,10 @@ import { useSession } from "@/lib/session";
 
 // Mismo registro que el formulario de contacto: mayúsculas, directo y sin
 // detalles del proveedor —esos quedan en el console.error del servidor—.
+// La preferencia de silencio del portal, con el prefijo av_ de av_user y el
+// mismo formato JSON. Ausente ⇒ con sonido.
+const MUTED_KEY = "av_muted";
+
 const ERROR_TEXT: Record<SubmitScoreError, string> = {
   INVALID: "REVISA LAS INICIALES: HACEN FALTA ENTRE 1 Y 10 CARACTERES.",
   RATE_LIMIT: "DEMASIADOS GUARDADOS. ESPERA UNOS MINUTOS Y REINTENTA.",
@@ -53,6 +57,10 @@ export function Reproductor({ game }: { game: PlayableGame }) {
   // El stat propio de cada juego, ya formateado por el motor. Sin motor no hay.
   const [extra, setExtra] = useState<GameSnapshot["extra"]>(undefined);
   const [paused, setPaused] = useState(false);
+  // El silencio es del portal, no de la partida: vive acá y baja al motor por
+  // la prop `muted` de <GameCanvas>. Los motores mudos lo ignoran.
+  const [muted, setMuted] = useState(false);
+  const [mutedHydrated, setMutedHydrated] = useState(false);
   const [over, setOver] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<SubmitScoreError | null>(null);
@@ -65,6 +73,31 @@ export function Reproductor({ game }: { game: PlayableGame }) {
   // después del primer render, así que leerlo derivado evita quedar en INVITADO.
   const displayName = user?.name ?? "INVITADO";
   const nameToSave = initials ?? displayName;
+
+  // av_muted se lee en un efecto y no durante el render: leer localStorage en
+  // el render rompe la hidratación y lanza en el servidor. Mismo patrón —y
+  // mismo eslint-disable— que av_user en lib/session.tsx.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(MUTED_KEY);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (raw !== null) setMuted(JSON.parse(raw) === true);
+    } catch {
+      // localStorage deshabilitado (modo privado) o JSON corrupto: con sonido.
+    }
+    setMutedHydrated(true);
+  }, []);
+
+  // El espejo de vuelta, recién después de hidratar: si no, el efecto de
+  // montaje pisaría con `false` la preferencia guardada.
+  useEffect(() => {
+    if (!mutedHydrated) return;
+    try {
+      localStorage.setItem(MUTED_KEY, JSON.stringify(muted));
+    } catch {
+      // Sin persistencia: el silencio vale solo para esta partida.
+    }
+  }, [muted, mutedHydrated]);
 
   useEffect(() => {
     if (withEngine || over || paused) return;
@@ -181,6 +214,15 @@ export function Reproductor({ game }: { game: PlayableGame }) {
           )}
         </div>
         <div className="hud-actions">
+          {/* Solo con motor: los ocho simulados no tienen nada que silenciar.
+              Aparece en los tres con motor y no solo en los que suenan —hacerlo
+              depender del audio del juego obligaría al motor a reportarle esa
+              capacidad a React, que es un segundo canal para un botón—. */}
+          {withEngine && (
+            <button className="btn ghost" onClick={() => setMuted((m) => !m)} aria-pressed={muted}>
+              {muted ? "SILENCIO" : "SONIDO"}
+            </button>
+          )}
           <button className="btn yellow" onClick={togglePause}>
             {paused ? "REANUDAR" : "PAUSA"}
           </button>
@@ -199,6 +241,7 @@ export function Reproductor({ game }: { game: PlayableGame }) {
             <GameCanvas
               ref={canvasRef}
               gameId={game.id}
+              muted={muted}
               onSnapshot={handleSnapshot}
               onGameOver={handleGameOver}
             />

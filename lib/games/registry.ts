@@ -16,6 +16,7 @@ export type EngineFactory = (canvas: HTMLCanvasElement, options: EngineOptions) 
 export const ENGINES: Record<string, () => Promise<EngineFactory>> = {
   asteroides: () => import("./asteroides/engine").then((m) => m.createAsteroidesEngine),
   tetris: () => import("./tetris/engine").then((m) => m.createTetrisEngine),
+  arkanoid: () => import("./arkanoid/engine").then((m) => m.createArkanoidEngine),
 };
 
 export function hasEngine(id: string): boolean {
