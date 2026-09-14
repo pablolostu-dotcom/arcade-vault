@@ -63,7 +63,6 @@ Arcade Vault es un portal de arcade retro: jugar online y competir por puntaje. 
 
 Puedes ver en 'references/implemented-games.md' la lista de juegos implementados cuando necesites implementar un juego.
 
-
 Todo es Server Component por defecto. Las únicas islas `"use client"` son `nav`, `biblioteca`, `game-card`, `reproductor`, `game-canvas`, `salon`, `auth-form`, `about/contact-form`, `home/reveal` y `supabase-check/self-test`.
 
 Las páginas que leen `scores` van con `export const dynamic = "force-dynamic"`: cachearlas mostraría el ranking anterior justo después de que alguien lo cambie, y un juego nuevo tiene que aparecer sin un deploy.
@@ -114,7 +113,11 @@ Motores hoy: `asteroides`, `tetris`, `arkanoid` (mouse + audio desde `public/sou
 
 ### Agregar un juego nuevo
 
-Es mecánico en cinco archivos y difícil en uno solo (el motor). Usá **`/spec-juego`**, que entrevista exactamente sobre esto:
+Son dos preguntas distintas y hay una herramienta para cada una. **Cuál** juego lo decide el subagente **`game-planner`** (`.claude/agents/game-planner.md`): lee el catálogo, los motores y el contrato del snapshot, los cruza con lo que ya se propuso, y devuelve una sola recomendación fundamentada. Su registro de sugerencias —propuestas, descartes y el porqué de cada uno— vive en `references/games-suggestions-todo.md`, y es lo que evita volver a evaluar el mismo candidato desde cero. **Cómo** se integra lo decide `/spec-juego`.
+
+Hay un tercer camino para cuando el disparador es **un tema** y no un hueco del catálogo: el subagente **`game-jam`** (`.claude/agents/game-jam.md`). Recibe un tema (`el fondo del mar`, `gravedad`, `1985`), compara candidatos con los mismos criterios de encaje de `game-planner`, elige uno y lo deja diseñado y especificado en `specs/game-jam/<game-id>/`, en tres archivos: `01-brief.md` (por qué ese juego), `02-diseno.md` (reglas, balance y constantes) y `03-spec.md` (el spec completo en `Draft`). No entrevista —decide y argumenta cada hueco— y no escribe fuera de esa carpeta: **no** toca `specs/` raíz ni el registro de sugerencias. Promover un spec del jam es manual: se copia `03-spec.md` a `specs/NN-juego-<id>.md`, se lo pasa a `Aprobado` y recién ahí corre `/spec-impl`.
+
+El cómo es mecánico en cinco archivos y difícil en uno solo (el motor). `/spec-juego` entrevista exactamente sobre esto:
 
 | Archivo                                        | Qué cambia                                           |
 | ---------------------------------------------- | ---------------------------------------------------- |

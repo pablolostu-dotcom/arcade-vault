@@ -1,6 +1,6 @@
 # Juegos implementados — Arcade Vault
 
-Catálogo leído de la tabla `public.games` del proyecto Supabase (12 filas, orden por `sort_order`).
+Catálogo leído de la tabla `public.games` del proyecto Supabase (13 filas, orden por `sort_order`).
 
 | ID              | Título        | Categoría | Descripción breve                                          | Color   |
 | --------------- | ------------- | --------- | ---------------------------------------------------------- | ------- |
@@ -16,6 +16,10 @@ Catálogo leído de la tabla `public.games` del proyecto Supabase (12 filas, ord
 | `tetris`        | TETRIS        | PUZZLE    | Encaja tetrominós y limpia líneas antes de tocar el techo. | cyan    |
 | `arkanoid`      | ARKANOID      | ARCADE    | Rompe cinco muros de bloques con una paleta y una pelota.  | magenta |
 | `snake`         | SNAKE         | ARCADE    | Come fruta en una grilla que se te va cerrando.            | yellow  |
+| `abismo`        | ABISMO        | SHOOTER   | Rescata buzos del abismo antes de que se acabe el aire.    | magenta |
 
-Los cuatro últimos (`asteroides`, `tetris`, `arkanoid`, `snake`) son los que tienen motor real en
-`lib/games/registry.ts`; los ocho primeros siguen con el puntaje simulado.
+Los cinco últimos (`asteroides`, `tetris`, `arkanoid`, `snake`, `abismo`) son los que tienen motor
+real en `lib/games/registry.ts`; los ocho primeros siguen con el puntaje simulado.
+
+`abismo` es el primero que salió de una game jam: el agente `game-jam` lo diseñó a partir del tema
+«el fondo del mar» y dejó el brief, el diseño y el spec en `specs/game-jam/abismo/`.

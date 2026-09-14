@@ -1101,10 +1101,104 @@
         no-repeat,
       linear-gradient(rgba(245, 255, 0, 0.55), rgba(245, 255, 0, 0.55)) 28.571% 80%/12.5% 16.667%
         no-repeat,
-      /* la cola */
-        linear-gradient(rgba(245, 255, 0, 0.45), rgba(245, 255, 0, 0.45)) 28.571% 100%/12.5% 16.667%
-        no-repeat;
+      /* la cola */ linear-gradient(rgba(245, 255, 0, 0.45), rgba(245, 255, 0, 0.45)) 28.571%
+        100%/12.5% 16.667% no-repeat;
     filter: drop-shadow(0 0 7px rgba(245, 255, 0, 0.5));
+  }
+
+  /* ABISMO: el corte del océano visto de costado, con la línea de agua arriba
+     y los rayos de luz bajando en diagonal desde la superficie. Es el gesto que
+     ninguna otra portada del repo hace, y lo que la despega de las dos más
+     cercanas: `.cover-invaders` es una grilla de filas sobre negro plano y
+     `.cover-rocas` son polígonos amarillos, las dos espaciales. Ninguna de las
+     doce que ya están es acuática, así que acá no hay un SNAKE/SERPENTINA que
+     resolver. El código de color es el mismo con el que lee el motor: magenta
+     sos vos, verde se salva, gris te muerde. */
+  .cover-abismo {
+    background:
+      /* los dos buzos, con el halo verde con el que los dibuja el canvas */
+      radial-gradient(
+        circle at 22% 70%,
+        var(--green) 0 5px,
+        rgba(0, 255, 136, 0.32) 5px 9px,
+        transparent 10px
+      ),
+      radial-gradient(
+        circle at 46% 88%,
+        var(--green) 0 5px,
+        rgba(0, 255, 136, 0.32) 5px 9px,
+        transparent 10px
+      ),
+      /* los rayos de luz, anclados abajo para que arranquen en la línea de agua
+         y no invadan la banda de aire */
+        repeating-linear-gradient(72deg, rgba(0, 245, 255, 0.05) 0 2px, transparent 2px 26px) 0
+        100%/100% 85% no-repeat,
+      /* la columna de agua, con la línea de superficie y su resplandor como
+         paradas de color: exacto, y sin la aritmética de posicionar bandas */
+        linear-gradient(
+          #071722 0 14.2%,
+          rgba(0, 245, 255, 0.85) 14.2% 15.2%,
+          rgba(0, 245, 255, 0.1) 15.2% 22%,
+          #0a1a26 22%,
+          #05050d 100%
+        );
+  }
+  /* El submarino del jugador, en el tercio superior izquierdo y mirando a la
+     derecha: casco alargado, torreta arriba y la hélice atrás. */
+  .cover-abismo::before {
+    content: "";
+    position: absolute;
+    left: 12%;
+    top: 26%;
+    width: 30%;
+    aspect-ratio: 34 / 16;
+    background: var(--magenta);
+    clip-path: polygon(
+      100% 50%,
+      88% 31%,
+      60% 25%,
+      55% 25%,
+      51% 8%,
+      37% 8%,
+      34% 26%,
+      14% 30%,
+      14% 12%,
+      4% 12%,
+      4% 88%,
+      14% 88%,
+      14% 70%,
+      34% 74%,
+      60% 75%,
+      88% 69%
+    );
+    filter: drop-shadow(0 0 8px rgba(255, 0, 110, 0.55));
+  }
+  /* El tiburón cruzando abajo a la derecha, en el gris de `--ink-dim` con el
+     que el motor pinta la amenaza. Sin glow: en el juego tampoco lo lleva. */
+  .cover-abismo::after {
+    content: "";
+    position: absolute;
+    right: 8%;
+    bottom: 14%;
+    width: 30%;
+    aspect-ratio: 36 / 16;
+    background: var(--ink-dim);
+    clip-path: polygon(
+      0 52%,
+      14% 38%,
+      40% 30%,
+      52% 6%,
+      60% 32%,
+      84% 36%,
+      100% 14%,
+      92% 50%,
+      100% 86%,
+      82% 62%,
+      58% 70%,
+      50% 92%,
+      42% 66%,
+      16% 62%
+    );
   }
 
   /* ===== detail screen ===== */
