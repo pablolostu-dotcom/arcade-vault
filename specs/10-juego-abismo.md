@@ -1,6 +1,6 @@
 # SPEC 10 — ABISMO: el quinto juego jugable, un rescate submarino con el aire contado
 
-> **Status:** Aprobado
+> **Status:** Aceptado
 > **Depends on:** SPEC 05, SPEC 06, SPEC 07, SPEC 08
 > **Date:** 2026-09-13
 > **Objective:** Diseñar y montar ABISMO —un shooter de corte submarino con oxígeno, rescate de buzos y cobro en la superficie— en `/jugar/abismo` como decimotercera fila del catálogo, sin tocar el chasis.
