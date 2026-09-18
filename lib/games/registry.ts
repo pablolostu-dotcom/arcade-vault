@@ -18,6 +18,7 @@ export const ENGINES: Record<string, () => Promise<EngineFactory>> = {
   tetris: () => import("./tetris/engine").then((m) => m.createTetrisEngine),
   arkanoid: () => import("./arkanoid/engine").then((m) => m.createArkanoidEngine),
   snake: () => import("./snake/engine").then((m) => m.createSnakeEngine),
+  abismo: () => import("./abismo/engine").then((m) => m.createAbismoEngine),
 };
 
 export function hasEngine(id: string): boolean {
