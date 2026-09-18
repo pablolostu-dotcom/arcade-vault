@@ -1,6 +1,6 @@
 # SPEC 09 — SNAKE: el cuarto juego jugable y el primero diseñado desde cero
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 05, SPEC 06, SPEC 07, SPEC 08
 > **Date:** 2026-09-06
 > **Objective:** Diseñar un Snake completo —reglas, balance y motor— y montarlo en `/jugar/snake` como duodécimo juego del catálogo, con las frutas dibujadas desde un atlas de sprites recortado.

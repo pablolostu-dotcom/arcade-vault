@@ -1,6 +1,6 @@
 # SPEC 08 — ARKANOID: el tercer juego jugable y el primero con sonido
 
-> **Status:** Aceptado
+> **Status:** Implementado
 > **Depends on:** SPEC 05, SPEC 06, SPEC 07
 > **Date:** 2026-09-05
 > **Objective:** Portar el Arkanoid de `references/started-games/04-arkanoid/` a un motor de canvas en TypeScript y montarlo en `/jugar/arkanoid` como undécimo juego del catálogo, abriéndole paso de paso al portal al control con mouse y al audio.

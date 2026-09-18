@@ -13,6 +13,16 @@
 
 export type GameStatus = "playing" | "dead" | "gameover";
 
+/**
+ * Las tres skins del vault. Son siempre las mismas para todos los juegos:
+ * `clasico` es la paleta que el motor ya tenía, `neon` la satura y le pone
+ * glow, y `retro` es fósforo monocromo de CRT con la información en luminancia.
+ */
+export type SkinId = "clasico" | "neon" | "retro";
+
+/** El orden en el que el botón del HUD las cicla. El primero es el default. */
+export const SKIN_IDS: readonly SkinId[] = ["clasico", "neon", "retro"];
+
 /** Lo único que un motor le cuenta a React. */
 export type GameSnapshot = {
   score: number;
@@ -46,6 +56,16 @@ export type EngineHandle = {
    * a la vez podrían pisarse.
    */
   setMuted(muted: boolean): void;
+  /**
+   * El botón de skin del HUD. Cambia la paleta EN CALIENTE: la partida no se
+   * reinicia y el próximo frame ya sale con la paleta nueva.
+   *
+   * Los motores que todavía no tienen skins lo implementan como no-op, por el
+   * mismo criterio con el que los motores mudos implementan `setMuted`: el
+   * contrato es uno solo para los cuatro juegos y un método vacío es más barato
+   * que un método opcional que cada llamador tendría que chequear.
+   */
+  setSkin(skin: SkinId): void;
   destroy(): void; // cancela el rAF y quita los listeners
 };
 
@@ -53,4 +73,14 @@ export type EngineOptions = {
   /** Se llama SOLO cuando algún valor del snapshot cambió, no en cada frame. */
   onSnapshot(snapshot: GameSnapshot): void;
   onGameOver(finalScore: number): void;
+  /**
+   * La skin inicial. Ausente ⇒ `clasico`.
+   *
+   * Viaja en las opciones y no por un `setSkin()` posterior por la misma razón
+   * que `muted` viaja como prop de <GameCanvas>: el motor se crea después de un
+   * import() dinámico, así que un `setSkin()` imperativo llamado al montar
+   * encontraría el handle en null y el primer frame escaparía con la paleta
+   * equivocada.
+   */
+  skin?: SkinId;
 };
