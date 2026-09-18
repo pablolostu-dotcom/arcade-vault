@@ -660,6 +660,11 @@ export function createArkanoidEngine(
       });
     },
 
+    // Arkanoid todavía no tiene skins: su paleta sigue siendo BLOCK_COLORS +
+    // PADDLE_COLOR + BALL_COLOR. No-op por el mismo criterio con el que los
+    // motores mudos no-opean setMuted().
+    setSkin() {},
+
     destroy() {
       destroyed = true;
       running = false;

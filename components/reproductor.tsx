@@ -20,7 +20,8 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { submitScore, type SubmitScoreError } from "@/app/jugar/actions";
 import { GameCanvas, type GameCanvasHandle } from "@/components/game-canvas";
 import type { Game } from "@/lib/data";
-import type { GameSnapshot } from "@/lib/games/types";
+import type { GameSnapshot, SkinId } from "@/lib/games/types";
+import { SKIN_IDS } from "@/lib/games/types";
 import { hasEngine } from "@/lib/games/registry";
 import { useSession } from "@/lib/session";
 
@@ -29,6 +30,23 @@ import { useSession } from "@/lib/session";
 // La preferencia de silencio del portal, con el prefijo av_ de av_user y el
 // mismo formato JSON. Ausente ⇒ con sonido.
 const MUTED_KEY = "av_muted";
+
+// La skin es POR JUEGO y no del portal: elegir `retro` en Tetris no puede
+// cambiarle la paleta a Snake. Va un mapa { [gameId]: SkinId } en una sola
+// clave —y no una clave av_skin_<id> por juego— para que siga siendo una
+// lectura, un JSON.parse y un efecto espejo, calcado de av_muted.
+const SKIN_KEY = "av_skin";
+
+const SKIN_LABELS: Record<SkinId, string> = {
+  clasico: "CLÁSICO",
+  neon: "NEÓN",
+  retro: "RETRO",
+};
+
+/** Un id desconocido, un JSON corrupto o un valor fuera de SKIN_IDS ⇒ clásico. */
+function isSkinId(value: unknown): value is SkinId {
+  return typeof value === "string" && (SKIN_IDS as readonly string[]).includes(value);
+}
 
 const ERROR_TEXT: Record<SubmitScoreError, string> = {
   INVALID: "REVISA LAS INICIALES: HACEN FALTA ENTRE 1 Y 10 CARACTERES.",
@@ -61,6 +79,10 @@ export function Reproductor({ game }: { game: PlayableGame }) {
   // la prop `muted` de <GameCanvas>. Los motores mudos lo ignoran.
   const [muted, setMuted] = useState(false);
   const [mutedHydrated, setMutedHydrated] = useState(false);
+  // La skin también es del portal y baja al motor por la prop `skin` de
+  // <GameCanvas>. Los motores que todavía no tienen skins la ignoran.
+  const [skin, setSkin] = useState<SkinId>("clasico");
+  const [skinHydrated, setSkinHydrated] = useState(false);
   const [over, setOver] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<SubmitScoreError | null>(null);
@@ -98,6 +120,43 @@ export function Reproductor({ game }: { game: PlayableGame }) {
       // Sin persistencia: el silencio vale solo para esta partida.
     }
   }, [muted, mutedHydrated]);
+
+  // av_skin, mismo patrón que av_muted: se lee en un efecto y nunca durante el
+  // render. La diferencia es que acá lo guardado es un mapa y hay que sacar la
+  // entrada de ESTE juego.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SKIN_KEY);
+      if (raw !== null) {
+        const parsed: unknown = JSON.parse(raw);
+        // typeof null === "object": el chequeo explícito es lo que evita que un
+        // av_skin con el literal "null" adentro tire al leer la entrada.
+        const saved =
+          typeof parsed === "object" && parsed !== null
+            ? (parsed as Record<string, unknown>)[game.id]
+            : undefined;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        if (isSkinId(saved)) setSkin(saved);
+      }
+    } catch {
+      // localStorage deshabilitado (modo privado) o JSON corrupto: clásico.
+    }
+    setSkinHydrated(true);
+  }, [game.id]);
+
+  // El espejo de vuelta. Relee el mapa antes de escribirlo para no borrar la
+  // preferencia de los otros juegos, que esta pantalla no tiene en memoria.
+  useEffect(() => {
+    if (!skinHydrated) return;
+    try {
+      const raw = localStorage.getItem(SKIN_KEY);
+      const parsed: unknown = raw === null ? null : JSON.parse(raw);
+      const map = typeof parsed === "object" && parsed !== null ? parsed : {};
+      localStorage.setItem(SKIN_KEY, JSON.stringify({ ...map, [game.id]: skin }));
+    } catch {
+      // Sin persistencia: la skin vale solo para esta partida.
+    }
+  }, [skin, skinHydrated, game.id]);
 
   useEffect(() => {
     if (withEngine || over || paused) return;
@@ -223,6 +282,21 @@ export function Reproductor({ game }: { game: PlayableGame }) {
               {muted ? "SILENCIO" : "SONIDO"}
             </button>
           )}
+          {/* El selector de skin es un botón que cicla y no un <select>: un
+              select necesitaría CSS nuevo en globals.css, y al portar pantallas
+              la regla ha sido no escribir CSS nuevo. Reusa .btn ghost, la misma
+              clase del botón de silencio. Aparece en los cuatro con motor
+              aunque tres todavía no-opeen setSkin(), por el mismo criterio con
+              el que el botón de silencio aparece en los que no suenan. */}
+          {withEngine && (
+            <button
+              className="btn ghost"
+              onClick={() => setSkin((s) => SKIN_IDS[(SKIN_IDS.indexOf(s) + 1) % SKIN_IDS.length])}
+              aria-label={`Skin: ${SKIN_LABELS[skin]}. Pulsa para cambiar.`}
+            >
+              {SKIN_LABELS[skin]}
+            </button>
+          )}
           <button className="btn yellow" onClick={togglePause}>
             {paused ? "REANUDAR" : "PAUSA"}
           </button>
@@ -242,6 +316,7 @@ export function Reproductor({ game }: { game: PlayableGame }) {
               ref={canvasRef}
               gameId={game.id}
               muted={muted}
+              skin={skin}
               onSnapshot={handleSnapshot}
               onGameOver={handleGameOver}
             />

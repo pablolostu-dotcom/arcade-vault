@@ -657,6 +657,10 @@ export function createAsteroidesEngine(
     // Asteroides es mudo: no hay nada que silenciar.
     setMuted() {},
 
+    // Asteroides todavía no tiene skins: su paleta sigue siendo COLORS. No-op
+    // por el mismo criterio con el que los motores mudos no-opean setMuted().
+    setSkin() {},
+
     destroy() {
       destroyed = true;
       running = false;

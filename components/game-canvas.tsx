@@ -11,7 +11,7 @@
 
 import { useEffect, useImperativeHandle, useRef, type Ref } from "react";
 
-import type { EngineHandle, GameSnapshot } from "@/lib/games/types";
+import type { EngineHandle, GameSnapshot, SkinId } from "@/lib/games/types";
 import { ENGINES } from "@/lib/games/registry";
 
 /** El mundo del motor. El canvas se estira por CSS; la física no se entera. */
@@ -35,12 +35,19 @@ type GameCanvasProps = {
    * después de createEngine() y en el efecto de cambio— y ese hueco no existe.
    */
   muted: boolean;
+  /**
+   * La skin activa. Baja por el mismo camino que `muted` y por el mismo motivo:
+   * el motor se crea después de un import() dinámico, así que la inicial viaja
+   * dentro de EngineOptions —no hay hueco para el primer frame— y los cambios
+   * posteriores entran por setSkin() sin reiniciar la partida.
+   */
+  skin: SkinId;
   onSnapshot: (snapshot: GameSnapshot) => void;
   onGameOver: (finalScore: number) => void;
   ref?: Ref<GameCanvasHandle>;
 };
 
-export function GameCanvas({ gameId, muted, onSnapshot, onGameOver, ref }: GameCanvasProps) {
+export function GameCanvas({ gameId, muted, skin, onSnapshot, onGameOver, ref }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<EngineHandle | null>(null);
 
@@ -58,6 +65,14 @@ export function GameCanvas({ gameId, muted, onSnapshot, onGameOver, ref }: GameC
     mutedRef.current = muted;
     engineRef.current?.setMuted(muted);
   }, [muted]);
+
+  // Y la skin igual: el efecto de montaje la lee de acá, así que cambiarla no
+  // vuelve a crear el motor ni reinicia la partida.
+  const skinRef = useRef(skin);
+  useEffect(() => {
+    skinRef.current = skin;
+    engineRef.current?.setSkin(skin);
+  }, [skin]);
 
   useImperativeHandle(
     ref,
@@ -91,6 +106,9 @@ export function GameCanvas({ gameId, muted, onSnapshot, onGameOver, ref }: GameC
       engine = createEngine(canvas, {
         onSnapshot: (snapshot) => callbacksRef.current.onSnapshot(snapshot),
         onGameOver: (finalScore) => callbacksRef.current.onGameOver(finalScore),
+        // La skin inicial va acá y no en un setSkin() posterior: con `retro`
+        // guardado, ni el primer frame sale en clásico.
+        skin: skinRef.current,
       });
       engineRef.current = engine;
       // Antes de start(): con el portal silenciado, ni el primer frame suena.

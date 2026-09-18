@@ -16,7 +16,7 @@
 // La tecla P tampoco se maneja acá: la pausa es del reproductor, y que el motor
 // la manejara además dejaría la pausa alternando dos veces por pulsación.
 
-import type { EngineHandle, EngineOptions, GameSnapshot, GameStatus } from "../types";
+import type { EngineHandle, EngineOptions, GameSnapshot, GameStatus, SkinId } from "../types";
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 // Portadas con sus valores originales. Este motor no rebalancea nada.
@@ -47,22 +47,118 @@ const NEXT_CELLS = 4; // la caja de 4×4 en la que se centra la pieza siguiente
  * dibujar es un motor que falla en silencio. El original lee `--grid-line` así
  * y esa variable en app/globals.css no existe: importado tal cual, la grilla se
  * dibujaría con un strokeStyle vacío y sin decir nada.
+ *
+ * Desde el SPEC 11 hay tres paletas en vez de una. `clasico` NO es un rediseño:
+ * son exactamente los literales que este archivo ya tenía sueltos, movidos acá
+ * sin tocar ni uno. Los números de contraste de cada skin están calculados en
+ * specs/skins/tetris/02-diseno.md.
  */
-const COLORS: (string | null)[] = [
-  null,
-  "#00f5ff", // I — --cyan
-  "#f5ff00", // O — --yellow
-  "#aa00ff", // T — violeta
-  "#00ff88", // S — --green
-  "#ff006e", // Z — --magenta
-  "#00a2ff", // J — azul
-  "#ff7700", // L — naranja
-  "#8a8fb5", // N (tuerca) — --ink-dim, como los asteroides
-];
+type SkinPiece = {
+  color: string;
+  /**
+   * `true` ⇒ el bloque se pinta como un anillo con el centro vacío.
+   *
+   * Es el segundo eje que hace posible `retro`: ocho piezas en un solo matiz no
+   * caben en una rampa de luminancia (ocho escalones de 1.5:1 sobre un piso de
+   * 4.5:1 necesitan 76.89:1, y contra negro el máximo es 21:1). Cuatro
+   * luminancias por dos tratamientos de relleno sí dan ocho.
+   */
+  hollow: boolean;
+};
 
-const GRID_LINE = "rgba(0, 245, 255, 0.08)";
-const HIGHLIGHT = "rgba(255, 255, 255, 0.12)";
-const GHOST_ALPHA = 0.2;
+type TetrisPalette = {
+  bg: string;
+  grid: string;
+  /** El brillo superior del bloque. Va SOBRE la pieza, no sobre el fondo. */
+  highlight: string;
+  ghostAlpha: number;
+  /**
+   * Contorno del fantasma. `null` ⇒ el fantasma es la pieza a `ghostAlpha`,
+   * como en el original. Un color ⇒ es un contorno de ese color, y entonces su
+   * contraste no depende de qué pieza esté cayendo.
+   */
+  ghostStroke: string | null;
+  /** shadowBlur de la pieza activa y de la siguiente. 0 ⇒ sin glow. */
+  glow: number;
+  /** Índice 0 sin usar; 1..8 = I O T S Z J L N, como PIECES. */
+  pieces: readonly (SkinPiece | null)[];
+};
+
+const solid = (color: string): SkinPiece => ({ color, hollow: false });
+const hollow = (color: string): SkinPiece => ({ color, hollow: true });
+
+const SKINS: Record<SkinId, TetrisPalette> = {
+  // Extraída literal del motor previo al SPEC 11. Dos de estos valores están
+  // por debajo del piso de contraste —el violeta de la T a 4.15:1 y la grilla a
+  // 1.11:1— y se dejan igual a propósito: corregirlos cambiaría lo que el
+  // jugador ya conoce. `neon` los resuelve en su propia paleta.
+  clasico: {
+    bg: "#000",
+    grid: "rgba(0, 245, 255, 0.08)",
+    highlight: "rgba(255, 255, 255, 0.12)",
+    ghostAlpha: 0.2,
+    ghostStroke: null,
+    glow: 0,
+    pieces: [
+      null,
+      solid("#00f5ff"), // I — --cyan
+      solid("#f5ff00"), // O — --yellow
+      solid("#aa00ff"), // T — violeta
+      solid("#00ff88"), // S — --green
+      solid("#ff006e"), // Z — --magenta
+      solid("#00a2ff"), // J — azul
+      solid("#ff7700"), // L — naranja
+      solid("#8a8fb5"), // N (tuerca) — --ink-dim, como los asteroides
+    ],
+  },
+  // Los ocho matices de `clasico`, saturados y con glow. La identidad de cada
+  // pieza se conserva: cambiar de matiz le haría perder al jugador la lectura
+  // que trae. T, J y L suben de brillo; T es el que cruza el piso de 4.5:1.
+  // No hay token violeta, azul ni naranja en :root — esas tres piezas ya usaban
+  // hex fuera de la paleta del portal desde el SPEC 07.
+  neon: {
+    bg: "#000",
+    grid: "rgba(0, 245, 255, 0.16)",
+    highlight: "rgba(255, 255, 255, 0.22)",
+    ghostAlpha: 0.2,
+    ghostStroke: "#00686d", // 3.20:1
+    glow: 14, // el mismo número que la pala y la pelota de arkanoid
+    pieces: [
+      null,
+      solid("#00f5ff"), // I — --cyan      15.50:1
+      solid("#f5ff00"), // O — --yellow    19.19:1
+      solid("#c04dff"), // T — violeta      5.75:1
+      solid("#00ff88"), // S — --green     15.66:1
+      solid("#ff006e"), // Z — --magenta    5.48:1
+      solid("#00b4ff"), // J — azul         8.97:1
+      solid("#ff9100"), // L — naranja      9.30:1
+      solid("#c7d0e0"), // N — --silver    13.53:1
+    ],
+  },
+  // Fósforo verde: un solo matiz y la información en luminancia. Cuatro niveles
+  // —17.31 / 11.03 / 7.05 / 4.64 contra negro, con ≥1.5:1 entre vecinos— por
+  // dos tratamientos de relleno. Los dos pares que un jugador confunde de
+  // verdad, S/Z y J/L, quedan repartidos en luminancia Y en tratamiento.
+  retro: {
+    bg: "#000",
+    grid: "rgba(0, 255, 0, 0.14)",
+    highlight: "rgba(160, 255, 160, 0.16)",
+    ghostAlpha: 0.2,
+    ghostStroke: "#006900", // 3.02:1, y a 1.53:1 de la pieza más oscura
+    glow: 0, // el halo del fósforo ya lo pone el marco CRT de <Reproductor>
+    pieces: [
+      null,
+      solid("#a0ffa0"), // I — L4 sólido
+      hollow("#008a00"), // O — L1 hueco
+      solid("#00da00"), // T — L3 sólido
+      solid("#00ae00"), // S — L2 sólido
+      hollow("#a0ffa0"), // Z — L4 hueco
+      solid("#008a00"), // J — L1 sólido
+      hollow("#00da00"), // L — L3 hueco
+      hollow("#00ae00"), // N — L2 hueco
+    ],
+  },
+};
 
 /**
  * Ocho piezas, no siete: la octava es la tuerca, un anillo 3×3 que el README
@@ -125,6 +221,9 @@ export function createTetrisEngine(
   const context2d = canvas.getContext("2d");
   if (!context2d) throw new Error("El canvas de TETRIS no expone un contexto 2d.");
   const ctx: CanvasRenderingContext2D = context2d;
+
+  // La paleta activa. Es una constante del motor, nunca leída del DOM.
+  let skin: TetrisPalette = SKINS[options.skin ?? "clasico"];
 
   // ── Estado ──────────────────────────────────────────────────────────────────
   let board: number[][] = [];
@@ -322,21 +421,69 @@ export function createTetrisEngine(
   };
 
   // ── Dibujo ──────────────────────────────────────────────────────────────────
-  function drawBlock(x: number, y: number, colorIndex: number, size: number, alpha = 1) {
+  /**
+   * `glow` solo lo piden la pieza activa y la siguiente: como mucho 16 celdas
+   * por frame. Un tablero lleno son 200, y 200 shadowBlur por frame se comen
+   * los 60 fps — el motor de arkanoid ya dejó escrita esa cuenta.
+   */
+  function drawBlock(
+    x: number,
+    y: number,
+    colorIndex: number,
+    size: number,
+    alpha = 1,
+    glow = false
+  ) {
     if (!colorIndex) return;
-    const color = COLORS[colorIndex];
-    if (!color) return;
+    const piece = skin.pieces[colorIndex];
+    if (!piece) return;
     ctx.globalAlpha = alpha;
-    ctx.fillStyle = color;
-    ctx.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
+    if (glow && skin.glow > 0) {
+      ctx.shadowColor = piece.color;
+      ctx.shadowBlur = skin.glow;
+    }
+    ctx.fillStyle = piece.color;
+    if (piece.hollow) {
+      // Un anillo: el marco del bloque con el centro vacío. Con size 30 son 5 px
+      // de espesor sobre 28 px de bloque, y el hueco central mide 18 px.
+      const t = Math.max(2, Math.round(size / 6));
+      const x0 = x * size + 1;
+      const y0 = y * size + 1;
+      const s = size - 2;
+      ctx.fillRect(x0, y0, s, t);
+      ctx.fillRect(x0, y0 + s - t, s, t);
+      ctx.fillRect(x0, y0 + t, t, s - 2 * t);
+      ctx.fillRect(x0 + s - t, y0 + t, t, s - 2 * t);
+    } else {
+      ctx.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
+    }
+    ctx.shadowBlur = 0;
     // El brillo superior del original: le da volumen al bloque plano.
-    ctx.fillStyle = HIGHLIGHT;
+    ctx.fillStyle = skin.highlight;
     ctx.fillRect(x * size + 1, y * size + 1, size - 2, 4);
     ctx.globalAlpha = 1;
   }
 
+  /**
+   * El fantasma. Con `ghostStroke` en null se dibuja como siempre —la pieza a
+   * `ghostAlpha`—, y con un color se dibuja como contorno de ese color. La
+   * diferencia importa porque el relleno hereda la luminancia de la pieza: con
+   * la más oscura de una paleta no llega ni a 1.7:1 contra el fondo.
+   */
+  function drawGhostBlock(x: number, y: number, colorIndex: number, size: number) {
+    if (!colorIndex) return;
+    if (!skin.ghostStroke) {
+      drawBlock(x, y, colorIndex, size, skin.ghostAlpha);
+      return;
+    }
+    if (!skin.pieces[colorIndex]) return;
+    ctx.strokeStyle = skin.ghostStroke;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x * size + 2, y * size + 2, size - 4, size - 4);
+  }
+
   function drawGrid() {
-    ctx.strokeStyle = GRID_LINE;
+    ctx.strokeStyle = skin.grid;
     ctx.lineWidth = 0.5;
     for (let c = 1; c < COLS; c++) {
       ctx.beginPath();
@@ -359,14 +506,14 @@ export function createTetrisEngine(
     const offY = Math.floor((NEXT_CELLS - shape.length) / 2);
     for (let r = 0; r < shape.length; r++) {
       for (let c = 0; c < shape[r].length; c++) {
-        drawBlock(offX + c, offY + r, shape[r][c], NEXT_BLOCK);
+        drawBlock(offX + c, offY + r, shape[r][c], NEXT_BLOCK, 1, true);
       }
     }
   }
 
   function draw() {
     // El mundo entero en negro: las bandas de los costados del tablero también.
-    ctx.fillStyle = "#000";
+    ctx.fillStyle = skin.bg;
     ctx.fillRect(0, 0, WORLD_W, WORLD_H);
 
     ctx.save();
@@ -383,13 +530,13 @@ export function createTetrisEngine(
     const gy = ghostY();
     for (let r = 0; r < current.shape.length; r++) {
       for (let c = 0; c < current.shape[r].length; c++) {
-        drawBlock(current.x + c, gy + r, current.shape[r][c], BLOCK, GHOST_ALPHA);
+        drawGhostBlock(current.x + c, gy + r, current.shape[r][c], BLOCK);
       }
     }
 
     for (let r = 0; r < current.shape.length; r++) {
       for (let c = 0; c < current.shape[r].length; c++) {
-        drawBlock(current.x + c, current.y + r, current.shape[r][c], BLOCK);
+        drawBlock(current.x + c, current.y + r, current.shape[r][c], BLOCK, 1, true);
       }
     }
     ctx.restore();
@@ -492,6 +639,15 @@ export function createTetrisEngine(
 
     // Tetris es mudo: no hay nada que silenciar.
     setMuted() {},
+
+    /**
+     * Cambia la paleta en caliente. No toca el tablero ni el loop: el próximo
+     * frame ya dibuja con la skin nueva, así que cambiar de skin en mitad de
+     * una partida no le cuesta al jugador ni un punto.
+     */
+    setSkin(next: SkinId) {
+      skin = SKINS[next] ?? SKINS.clasico;
+    },
 
     destroy() {
       destroyed = true;

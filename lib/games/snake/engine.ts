@@ -749,6 +749,11 @@ export function createSnakeEngine(canvas: HTMLCanvasElement, options: EngineOpti
       if (muted) stopVoices();
     },
 
+    // Snake todavía no tiene skins: su paleta sigue siendo SNAKE_COLOR +
+    // FRAME_COLOR + GRID + los halos de fruta. No-op por el mismo criterio con
+    // el que los motores mudos no-opean setMuted().
+    setSkin() {},
+
     destroy() {
       destroyed = true;
       running = false;
