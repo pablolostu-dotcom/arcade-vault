@@ -22,8 +22,14 @@
 // El archivo está completo según el plan del SPEC 10: el mundo, el submarino, el
 // oxígeno, los buzos, el cobro en superficie, los enemigos, los torpedos y los
 // seis efectos de audio, sintetizados y sin un solo binario en el repo.
+//
+// El SPEC 12 le agregó lo único que le faltaba del chasis: las tres skins del
+// vault y el setSkin() que el SPEC 11 sumó a EngineHandle y este motor, escrito
+// en paralelo, nunca llegó a implementar. `clasico` es la paleta de antes,
+// extraída literal; el diseño y los ratios de las otras dos están en
+// specs/skins/abismo/02-diseno.md.
 
-import type { EngineHandle, EngineOptions, GameSnapshot, GameStatus } from "../types";
+import type { EngineHandle, EngineOptions, GameSnapshot, GameStatus, SkinId } from "../types";
 
 // ── El mundo ──────────────────────────────────────────────────────────────────
 // 800×600 partido en tres bandas, y la cuenta cierra exacta: 90 + 480 + 30 = 600,
@@ -168,30 +174,161 @@ const MAX_FRAME_MS = 50; // el tope del dt, igual que en los otros cuatro motore
 // El código de color es la regla de lectura del juego: magenta sos vos, amarillo
 // te mata, verde se salva, gris te muerde. Se aprende en dos segundos y no
 // necesita leyenda.
-const COLOR_DEEP_TOP = "#001018"; // el agua cerca de la superficie
-const COLOR_DEEP_BOTTOM = "#000000"; // el abismo
-const COLOR_AIR = "rgba(0, 245, 255, 0.06)";
-const COLOR_SURFACE = "#00f5ff";
-const COLOR_SEABED = "rgba(138, 143, 181, 0.18)";
-const COLOR_BUBBLE = "rgba(0, 245, 255, 0.10)";
-const COLOR_SUB = "#ff006e";
-const COLOR_SUB_ALARM = "#ffa8c8"; // el casco en alarma, magenta al blanco
-const COLOR_CARGO_ON = "#00ff88"; // una luz de bodega ocupada
-const COLOR_CARGO_OFF = "rgba(0, 255, 136, 0.18)"; // una plaza vacía
-const COLOR_DIVER = "#00ff88"; // --green: el color de lo que salvás
-const COLOR_TORPEDO = "#ff006e"; // lo que sale de vos es magenta
-const COLOR_SHARK = "#8a8fb5"; // --ink-dim: la silueta que no brilla
-const COLOR_ESUB = "#f5ff00"; // --yellow
-const COLOR_ETORPEDO = "#f5ff00"; // lo que viene del enemigo es amarillo
+// Desde el SPEC 12 son TRES paletas y no una. La forma es la del SPEC 11: un
+// record indexado por SkinId, con `clasico` extraída literal de lo que el motor
+// pintaba antes —ni un matiz corregido— y las otras dos diseñadas y medidas en
+// specs/skins/abismo/02-diseno.md.
+type AbismoPalette = {
+  /** El tope del degradado de agua, justo bajo la línea de superficie. */
+  deepTop: string;
+  /** El fondo del degradado: el abismo. */
+  deepBottom: string;
+  /** La banda de aire sobre SURFACE_Y. */
+  air: string;
+  /** La línea de agua: donde se respira y donde se cobra. */
+  surface: string;
+  /** La silueta del lecho marino. Decoración: no colisiona con nada. */
+  seabed: string;
+  /** Las BUBBLE_COUNT burbujas de fondo. */
+  bubble: string;
+  /** El casco del jugador. */
+  sub: string;
+  /** El casco parpadeando con el tanque por debajo de TANK_ALARM_S. */
+  subAlarm: string;
+  /** Una luz de bodega ocupada. Va SOBRE el casco, no sobre el fondo. */
+  cargoOn: string;
+  /** Una plaza de bodega vacía. */
+  cargoOff: string;
+  /** Los buzos. */
+  diver: string;
+  /** El torpedo del jugador. */
+  torpedo: string;
+  /** El tiburón. */
+  shark: string;
+  /** El submarino enemigo. */
+  esub: string;
+  /** El torpedo del submarino enemigo. */
+  eTorpedo: string;
+  /**
+   * `true` ⇒ el submarino enemigo se dibuja de contorno en vez de macizo.
+   *
+   * Es el segundo eje que hace posible `retro`: el submarino enemigo comparte
+   * silueta con el del jugador —elipse, torreta y hélice—, y en monocromo la
+   * luminancia sola no alcanza para separar dos óvalos de 56×26 y 58×24 que se
+   * cruzan a 260 px/s. Mismo mecanismo con el que el SPEC 11 metió ocho piezas
+   * de tetris en un solo matiz.
+   */
+  esubHollow: boolean;
+  /** shadowBlur del casco. 0 ⇒ sin glow. */
+  glowSub: number;
+  /** shadowBlur de la línea de agua. */
+  glowSurface: number;
+  /** shadowBlur de los buzos. */
+  glowDiver: number;
+};
 
-// El shadowBlur va SOLO en el submarino, en la línea de agua y (desde el paso 3)
-// en los buzos: cinco sombras por frame como techo. No va en los enemigos, que
-// pueden ser diez, ni en las burbujas, que son cuarenta — cien sombras por frame
-// hunden los 60 fps, la lección que el SPEC 09 escribió sobre el cuerpo de la
-// serpiente.
-const GLOW_SUB = 12;
-const GLOW_SURFACE = 10;
-const GLOW_DIVER = 8;
+/** El ancho del contorno cuando `esubHollow` está en true. */
+const HOLLOW_LINE_WIDTH = 2;
+
+// El shadowBlur va SOLO en el submarino, en la línea de agua y en los buzos:
+// cinco sombras por frame como techo. No va en los enemigos, que pueden ser
+// diez, ni en los torpedos, ni en las burbujas, que son cuarenta — cien sombras
+// por frame hunden los 60 fps, la lección que el SPEC 09 escribió sobre el
+// cuerpo de la serpiente. Las tres skins respetan el MISMO presupuesto: lo que
+// cambia por skin es el radio de esas cinco sombras, nunca cuántas son.
+const SKINS: Record<SkinId, AbismoPalette> = {
+  // Extraída literal del motor previo al SPEC 12. Dos pares de entidades se
+  // distinguen acá SOLO por matiz —el jugador del tiburón, a 1.22:1 de
+  // luminancia, y el buzo del submarino enemigo, a 1.23:1— y se dejan así a
+  // propósito: corregirlos cambiaría lo que el jugador ya conoce. `neon` y
+  // `retro` los resuelven cada una por su lado.
+  clasico: {
+    deepTop: "#001018", // el agua cerca de la superficie
+    deepBottom: "#000000", // el abismo
+    air: "rgba(0, 245, 255, 0.06)",
+    surface: "#00f5ff", // --cyan          15.50:1
+    seabed: "rgba(138, 143, 181, 0.18)",
+    bubble: "rgba(0, 245, 255, 0.10)",
+    sub: "#ff006e", // --magenta            5.48:1
+    subAlarm: "#ffa8c8", // magenta al blanco, 11.69:1
+    cargoOn: "#00ff88", // --green         15.66:1
+    cargoOff: "rgba(0, 255, 136, 0.18)", // una plaza vacía
+    diver: "#00ff88", // --green: lo que salvás
+    torpedo: "#ff006e", // lo que sale de vos es magenta
+    shark: "#8a8fb5", // --ink-dim: la silueta que no brilla
+    esub: "#f5ff00", // --yellow
+    eTorpedo: "#f5ff00", // lo que viene del enemigo es amarillo
+    esubHollow: false,
+    glowSub: 12,
+    glowSurface: 10,
+    glowDiver: 8,
+  },
+  // Los cuatro matices del código de color del SPEC 10 —magenta sos vos,
+  // amarillo te mata, verde se salva, gris te muerde— repartidos en cuatro
+  // escalones de luminancia separados por ≥1.5:1, que es lo que `clasico` no
+  // tiene. Quien lleva glow —el jugador y los buzos— ocupa los escalones del
+  // medio; los enemigos, que lo tienen prohibido porque pueden ser diez, se
+  // compran la visibilidad con luminancia bruta.
+  neon: {
+    deepTop: "#001b2b",
+    deepBottom: "#000000",
+    air: "rgba(0, 245, 255, 0.10)",
+    surface: "#00f5ff", // --cyan          15.50:1
+    seabed: "rgba(138, 143, 181, 0.30)",
+    bubble: "rgba(0, 245, 255, 0.16)",
+    sub: "#ff58a3", // magenta L2           7.18:1
+    subAlarm: "#ffd6e8", //                16.04:1
+    cargoOn: "#00ff88", // --green   2.18:1 contra el casco
+    cargoOff: "rgba(0, 255, 136, 0.22)",
+    diver: "#00d676", // verde L3          10.88:1
+    torpedo: "#ff58a3", // el color del casco
+    shark: "#6e7396", // gris L1            4.56:1
+    esub: "#e6f000", // amarillo L4        16.83:1
+    eTorpedo: "#e6f000", // el de quien lo dispara
+    esubHollow: false,
+    glowSub: 16,
+    glowSurface: 14,
+    glowDiver: 12,
+  },
+  // Fósforo verde P1, el mismo que el `retro` de TETRIS: la skin tiene que
+  // leerse igual en los cinco juegos, no ser un tema distinto por juego. Que el
+  // verde de sonar sea además lo que un submarino ve por su pantalla es un
+  // regalo del tema.
+  //
+  // Con un solo matiz el código de color desaparece entero y hay que
+  // reconstruirlo: cuatro luminancias —17.31 / 11.03 / 7.05 / 4.64, con ≥1.5:1
+  // entre vecinas— por dos tratamientos de relleno. La regla nueva es «cuanto
+  // más brillante, más tuyo», y los torpedos heredan la luminancia de quien los
+  // disparó.
+  retro: {
+    deepTop: "#001400",
+    deepBottom: "#000000",
+    air: "rgba(160, 255, 160, 0.06)",
+    surface: "#a0ffa0", // L4              17.31:1
+    seabed: "rgba(0, 218, 0, 0.18)",
+    bubble: "rgba(160, 255, 160, 0.08)",
+    sub: "#a0ffa0", // L4                  17.31:1
+    subAlarm: "#e2ffe2", //                19.64:1
+    // Invertidas respecto de las otras dos: el casco es lo más claro de la
+    // pantalla, así que una luz clara adentro sería invisible. La plaza OCUPADA
+    // pasa a ser el punto oscuro —3.73:1 contra el casco— y la vacía apenas se
+    // insinúa. Se conserva lo que el jugador lee; se invierte el signo.
+    cargoOn: "#008a00", // L1               4.64:1
+    cargoOff: "rgba(0, 60, 0, 0.35)",
+    diver: "#00da00", // L3                11.03:1
+    torpedo: "#a0ffa0", // L4, el del casco
+    shark: "#008a00", // L1, macizo         4.64:1
+    esub: "#00ae00", // L2, HUECO           7.05:1
+    eTorpedo: "#00ae00", // L2, el de quien lo dispara
+    esubHollow: true,
+    // Sin glow: el halo del fósforo ya lo pone el marco CRT de <Reproductor>, y
+    // un shadowBlur encima lo duplica y embarra el verde. Con 17.31:1 sobre
+    // negro, el casco y la línea de agua no necesitan ayuda para verse.
+    glowSub: 0,
+    glowSurface: 0,
+    glowDiver: 0,
+  },
+};
 
 // ── Las burbujas de fondo ─────────────────────────────────────────────────────
 // Decoración pura: no colisionan con nada y no entran en ninguna regla. Son lo
@@ -241,6 +378,10 @@ export function createAbismoEngine(
   const context2d = canvas.getContext("2d");
   if (!context2d) throw new Error("El canvas de ABISMO no expone un contexto 2d.");
   const ctx: CanvasRenderingContext2D = context2d;
+
+  // La paleta activa. Es una constante del motor, nunca leída del DOM: un motor
+  // que necesita una hoja de estilos para dibujar falla en silencio.
+  let skin: AbismoPalette = SKINS[options.skin ?? "clasico"];
 
   // ── Estado ──────────────────────────────────────────────────────────────────
   /** El centro del submarino. `y <= SURFACE_Y` es la condición de emergido. */
@@ -845,19 +986,19 @@ export function createAbismoEngine(
   function drawWorld() {
     // El agua, de un azul frío casi negro al negro del abismo.
     const water = ctx.createLinearGradient(0, SURFACE_Y, 0, H);
-    water.addColorStop(0, COLOR_DEEP_TOP);
-    water.addColorStop(1, COLOR_DEEP_BOTTOM);
+    water.addColorStop(0, skin.deepTop);
+    water.addColorStop(1, skin.deepBottom);
     ctx.fillStyle = water;
     ctx.fillRect(0, 0, W, H);
 
     // La banda de aire: cyan casi apagado. Ningún enemigo entra acá, así que la
     // superficie es segura por construcción y no por una regla que haya que
     // explicar.
-    ctx.fillStyle = COLOR_AIR;
+    ctx.fillStyle = skin.air;
     ctx.fillRect(0, 0, W, SURFACE_Y);
 
     // Las burbujas, sin sombra: son cuarenta.
-    ctx.fillStyle = COLOR_BUBBLE;
+    ctx.fillStyle = skin.bubble;
     for (const bubble of bubbles) {
       ctx.beginPath();
       ctx.arc(bubble.x, bubble.y, bubble.r, 0, Math.PI * 2);
@@ -867,16 +1008,16 @@ export function createAbismoEngine(
     // La línea de agua, con glow: es la referencia visual más importante del
     // juego, porque marca dónde se respira y dónde se cobra.
     ctx.save();
-    ctx.shadowColor = COLOR_SURFACE;
-    ctx.shadowBlur = GLOW_SURFACE;
-    ctx.fillStyle = COLOR_SURFACE;
+    ctx.shadowColor = skin.surface;
+    ctx.shadowBlur = skin.glowSurface;
+    ctx.fillStyle = skin.surface;
     ctx.fillRect(0, SURFACE_Y - 1, W, 2);
     ctx.restore();
 
     // El lecho marino: una franja y una silueta de rocas, dibujadas con una
     // onda determinista para que no titilen entre frames. No colisiona con nada;
     // el submarino ya está topeado antes por SUB_MAX_Y.
-    ctx.fillStyle = COLOR_SEABED;
+    ctx.fillStyle = skin.seabed;
     ctx.beginPath();
     ctx.moveTo(0, H);
     ctx.lineTo(0, SEABED_Y);
@@ -900,7 +1041,7 @@ export function createAbismoEngine(
     // Esto es dibujo de entidad, no una barra de HUD.
     const alarming = tank < TANK_ALARM_S;
     const blinkOn = Math.floor((clockMs / 1000) * ALARM_BLINK_HZ) % 2 === 0;
-    const hull = alarming && blinkOn ? COLOR_SUB_ALARM : COLOR_SUB;
+    const hull = alarming && blinkOn ? skin.subAlarm : skin.sub;
 
     const dir = facing === "right" ? 1 : -1;
     const halfW = SUB_W / 2;
@@ -909,8 +1050,8 @@ export function createAbismoEngine(
     ctx.save();
     ctx.translate(subX, subY);
     ctx.scale(dir, 1);
-    ctx.shadowColor = COLOR_SUB;
-    ctx.shadowBlur = GLOW_SUB;
+    ctx.shadowColor = skin.sub;
+    ctx.shadowBlur = skin.glowSub;
     ctx.fillStyle = hull;
 
     // El casco: un óvalo alargado.
@@ -933,7 +1074,7 @@ export function createAbismoEngine(
     // la serpiente. Sin sombra propia: heredan el glow del casco.
     ctx.shadowBlur = 0;
     for (let i = 0; i < DIVER_CAPACITY; i += 1) {
-      ctx.fillStyle = i < divers ? COLOR_CARGO_ON : COLOR_CARGO_OFF;
+      ctx.fillStyle = i < divers ? skin.cargoOn : skin.cargoOff;
       ctx.beginPath();
       ctx.arc(-18 + i * 7, 2, 2.2, 0, Math.PI * 2);
       ctx.fill();
@@ -949,9 +1090,9 @@ export function createAbismoEngine(
    */
   function drawDivers() {
     ctx.save();
-    ctx.shadowColor = COLOR_DIVER;
-    ctx.shadowBlur = GLOW_DIVER;
-    ctx.fillStyle = COLOR_DIVER;
+    ctx.shadowColor = skin.diver;
+    ctx.shadowBlur = skin.glowDiver;
+    ctx.fillStyle = skin.diver;
     for (const diver of swimmers) {
       // El casco de buceo.
       ctx.beginPath();
@@ -981,7 +1122,7 @@ export function createAbismoEngine(
       ctx.scale(dir, 1);
 
       if (enemy.kind === "shark") {
-        ctx.fillStyle = COLOR_SHARK;
+        ctx.fillStyle = skin.shark;
         // El cuerpo, con el morro adelante.
         ctx.beginPath();
         ctx.moveTo(SHARK_W / 2, 0);
@@ -1001,8 +1142,21 @@ export function createAbismoEngine(
         ctx.lineTo(-12, -SHARK_H / 2 + 4);
         ctx.closePath();
         ctx.fill();
+      } else if (skin.esubHollow) {
+        // El único cambio de dibujo que el SPEC 12 le hace al motor. En una
+        // skin monocroma este casco y el del jugador son el mismo óvalo con
+        // torreta y hélice, y la luminancia sola no los separa a 260 px/s: acá
+        // el enemigo va de contorno y el jugador macizo.
+        ctx.strokeStyle = skin.esub;
+        ctx.lineWidth = HOLLOW_LINE_WIDTH;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, ESUB_W / 2, ESUB_H / 2, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        // La torreta y la hélice, espejadas respecto del submarino del jugador.
+        ctx.strokeRect(-10, -ESUB_H / 2 - 6, 14, 7);
+        ctx.strokeRect(-ESUB_W / 2 - 5, -8, 4, 16);
       } else {
-        ctx.fillStyle = COLOR_ESUB;
+        ctx.fillStyle = skin.esub;
         ctx.beginPath();
         ctx.ellipse(0, 0, ESUB_W / 2, ESUB_H / 2, 0, 0, Math.PI * 2);
         ctx.fill();
@@ -1016,11 +1170,11 @@ export function createAbismoEngine(
   }
 
   function drawTorpedoes() {
-    ctx.fillStyle = COLOR_TORPEDO;
+    ctx.fillStyle = skin.torpedo;
     for (const shot of torpedoes) {
       ctx.fillRect(shot.x - TORPEDO_W / 2, shot.y - TORPEDO_H / 2, TORPEDO_W, TORPEDO_H);
     }
-    ctx.fillStyle = COLOR_ETORPEDO;
+    ctx.fillStyle = skin.eTorpedo;
     for (const shot of eTorpedoes) {
       ctx.fillRect(shot.x - ETORPEDO_W / 2, shot.y - ETORPEDO_H / 2, ETORPEDO_W, ETORPEDO_H);
     }
@@ -1198,6 +1352,18 @@ export function createAbismoEngine(
       muted = next;
       if (master) master.gain.value = muted ? 0 : SOUND_VOLUME;
       if (muted) stopVoices();
+    },
+
+    /**
+     * Cambia la paleta EN CALIENTE. No toca el reloj, ni el oxígeno, ni los
+     * temporizadores de aparición, y no emite un snapshot: la skin no es estado
+     * del juego. El próximo frame ya sale con la paleta nueva, así que cambiar
+     * de skin en mitad de una partida no le cuesta al jugador ni un punto.
+     *
+     * Un valor que no esté en SKIN_IDS cae a `clasico`, igual que en tetris.
+     */
+    setSkin(next: SkinId) {
+      skin = SKINS[next] ?? SKINS.clasico;
     },
 
     destroy() {
