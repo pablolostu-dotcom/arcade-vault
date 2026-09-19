@@ -1,7 +1,7 @@
-# SPEC 11 — Apariencia Neon del MobileGamepad
+# SPEC 12 — Apariencia Neon del MobileGamepad
 
 > **Estado:** Implementado
-> **Depende de:** 10-mobile-touch-controls
+> **Depende de:** 11-mobile-touch-controls
 > **Fecha:** 2026-05-21
 > **Objetivo:** Rediseñar la apariencia visual de `components/MobileGamepad.tsx`
 > para que coincida con el asset de referencia `references/gamepad-assets/gamepad.html`

@@ -1,4 +1,4 @@
-# SPEC 10 — Controles táctiles para dispositivos móviles
+# SPEC 11 — Controles táctiles para dispositivos móviles
 
 > **Estado:** implementado
 > **Depende de:** 05-asteroids-game, 07-tetris-game, 08-arkanoid-game, 09-snake-game
